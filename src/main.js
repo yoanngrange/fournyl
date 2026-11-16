@@ -8,6 +8,7 @@ import { DEP_SCALE, createMap } from './map.js';
 import { createSidebar } from './sidebar.js';
 import { createCard } from './card.js';
 import { createSearch } from './search.js';
+import { mountBasketLinks } from './lib/basket.js';
 
 const TOP_N = 8;
 const MAX_RANKED = 1500; // above this many communes on screen, delivery spots are not ranked
@@ -40,6 +41,7 @@ function rows(index) {
 const FRANCE = [[-5.3, 41.3], [9.7, 51.2]];
 
 async function start() {
+  mountBasketLinks();
   const [meta, index, departements] = await Promise.all([
     getJSON('meta.json'),
     getJSON('communes-index.json'),

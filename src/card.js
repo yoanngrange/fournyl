@@ -2,7 +2,7 @@
 import t from './i18n/fr.js';
 import { fmtCriterion, fmtInt, fmtPostcode, tr } from './lib/format.js';
 import { ROAD_FACTOR, ROAD_SPEED_KMH, roadTrip } from './lib/delivery.js';
-import { readShortlist, toggleShortlist } from './lib/shortlist.js';
+import { basketButton, inBasket, toggleBasket } from './lib/basket.js';
 import { communePath } from './lib/slug.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
@@ -47,7 +47,6 @@ export function createCard(root, { onClose, meta }) {
       view.score == null
         ? t['cat.unknown']
         : tr(view.filteredOut ? 'card.outOfFiltered' : 'card.outOf', { cat: t[`cat.${view.cat}`] });
-    const starred = readShortlist().has(c.code);
     const y = meta.years;
 
     root.innerHTML = `
@@ -73,14 +72,14 @@ export function createCard(root, { onClose, meta }) {
       ${zoneBlock(view.zone, y)}
       <div class="card-actions">
         <a class="card-page" href="${communePath(view.depName, c.name, c.code)}">${t['card.page']}</a>
-        <button type="button" class="card-star" aria-pressed="${starred}" aria-label="${starred ? t['card.shortlistRemove'] : t['card.shortlistAdd']}">${starred ? '★' : '☆'}</button>
+        ${basketButton(inBasket(c.code), 'card-basket', false)}
       </div>`;
 
     root.querySelector('.card-close').addEventListener('click', onClose);
-    root.querySelector('.card-star').addEventListener('click', () => {
-      toggleShortlist(c.code);
+    root.querySelector('.card-basket').addEventListener('click', () => {
+      toggleBasket(c.code);
       render(c, view);
-      root.querySelector('.card-star').focus();
+      root.querySelector('.card-basket').focus();
     });
   }
 

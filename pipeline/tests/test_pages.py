@@ -98,7 +98,7 @@ def test_seo_tags(site, tmp_path):
     assert dep.count("<title>") == 1 and "Loire-Atlantique (44)" in dep
     assert 'href="loire-atlantique/clisson-44043/"' in dep and "<!-- places -->" not in dep
     assert dep.count('property="og:title"') == 1  # the shell's generic tags are replaced, not duplicated
-    for rel in ("index.html", "sources/index.html", "infos-legales/index.html", "ma-selection/index.html"):
+    for rel in ("index.html", "sources/index.html", "infos-legales/index.html", "panier/index.html"):
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(ROOT / "public" / rel, tmp_path / rel)
     site.write(tmp_path)
@@ -109,4 +109,4 @@ def test_seo_tags(site, tmp_path):
     assert llms.startswith("# Fournyl\n") and f"({SITE_URL}loire-atlantique/)" in llms
     sitemap = (tmp_path / "sitemap.xml").read_text()
     assert sitemap.count("<url>") == 3 + len(site.exported) + len(site.communes) and "<lastmod>" in sitemap
-    assert "noindex" in (tmp_path / "ma-selection/index.html").read_text()
+    assert "noindex" in (tmp_path / "panier/index.html").read_text()
