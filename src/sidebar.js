@@ -136,8 +136,11 @@ export function createSidebar(root, { getState, setFilter, resetFilters, pick })
         r.hi.setAttribute('aria-valuetext', fmtCriterion(c.key, hiV));
         // Below the track: the bounds of the communes on screen. Above the handles: the chosen values.
         r.vals[0].textContent = fmtCriterion(c.key, range.min);
-        r.vals[1].textContent = fmtCriterion(c.key, range.max);
-        placeBubbles(r, a, b, fmtCriterion(c.key, loV), fmtCriterion(c.key, hiV));
+        // A capped scale: the end of the slider means "this value and above" (outliers included).
+        const top = (v) => (range.capped ? tr('filters.andAbove', { v: fmtCriterion(c.key, v) }) : fmtCriterion(c.key, v));
+        r.vals[1].textContent = top(range.max);
+        if (range.capped && f.hi == null) r.hi.setAttribute('aria-valuetext', top(hiV));
+        placeBubbles(r, a, b, fmtCriterion(c.key, loV), f.hi == null ? top(hiV) : fmtCriterion(c.key, hiV));
       }
 
       topTitleEl.textContent = topTitle;

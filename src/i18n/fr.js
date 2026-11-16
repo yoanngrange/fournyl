@@ -81,6 +81,7 @@ export default {
   'filters.min': '{label}, minimum',
   'filters.max': '{label}, maximum',
   'filters.noData': 'Pas de donnée à l’écran',
+  'filters.andAbove': '{v} et +',
 
   'crit.pop': 'Population',
   'crit.pop.unit': 'habitants',
@@ -290,6 +291,8 @@ export default {
   'page.poverty': 'Taux de pauvreté',
   'page.vacant': 'Logements vacants',
   'page.safetyServices': 'Sécurité et services',
+  'page.crimeHigh':
+    'Taux très élevé : c’est souvent une commune très fréquentée (aéroport, station de ski, site touristique). Les faits commis par les visiteurs sont rapportés aux seuls habitants.',
   'page.crimeRank': 'moins de faits que {p} % des communes françaises notées',
   'page.services': 'Équipements et services',
   'page.market.none': 'pas encore dans les données publiques',

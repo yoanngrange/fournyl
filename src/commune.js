@@ -1,7 +1,7 @@
 // Commune page: everything we know about one commune, from data/commune/<code>.json.
 import * as maplibregl from '../vendor/maplibre-gl-6.11.2/maplibre-gl.mjs';
 import t from './i18n/fr.js';
-import { BIN_COLOURS, CRITERIA, WEIGHTS, bin, category, score } from './lib/scoring.js';
+import { BIN_COLOURS, CRIME_HIGH, CRITERIA, WEIGHTS, bin, category, score } from './lib/scoring.js';
 import { fmtCriterion, fmtEuro, fmtInt, fmtPct, fmtSigned, tr } from './lib/format.js';
 import { readShortlist, toggleShortlist } from './lib/shortlist.js';
 import { depPath } from './lib/slug.js';
@@ -323,6 +323,7 @@ function safetyServices(p) {
       crime.v == null ? t['card.notPublished'] : `${fmtCriterion('crime', crime.v)} ‰`,
       crime.pct == null ? t['card.crime.sub'] : tr('page.crimeRank', { p: Math.round(crime.pct / 10) }),
     )}</div>
+    ${crime.v >= CRIME_HIGH ? `<p class="pg-why-note">${t['page.crimeHigh']}</p>` : ''}
     <h3>${t['page.services']}</h3>${svc}${row(t['svc.market'], t['page.market.none'])}`;
 }
 

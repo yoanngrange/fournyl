@@ -63,6 +63,10 @@ Mockups in `design/` (see `design/README.md`). Layout: left sidebar 380 px, map 
   to bigger or smaller communes does not silently filter them out. Population and inhabitants per bakery
   use a **logarithmic** slider (a city and villages share one range). A missing value never filters out, except
   that a commune without a bakery counts as infinite inhabitants per bakery (Nov 2026): it passes a minimum, not a maximum.
+- *Crime outliers (Nov 2026):* a few communes have huge rates because visitors, not residents, drive the figure
+  (Roissy-en-France ≈ 990 ‰ with the airport, ski resorts, Saint-Tropez; national median ≈ 7 ‰). The value is kept
+  and scored as is, but the crime slider ends at the 99th percentile of the communes on screen (labelled "X et +";
+  the end of the slider still includes the outliers). The commune page adds a note above 100 ‰.
 - *French labels:* Go / Maybe / Avoid are shown as **Favorable / À étudier / Défavorable**.
 
 Criteria (MVP):
