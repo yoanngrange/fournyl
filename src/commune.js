@@ -63,7 +63,10 @@ function why(p) {
           </div>
         </div>`;
       }
-      const value = c.key === 'per_bakery' && !p.bakeries ? t['page.why.noBakery'] : fmtCriterion(c.key, crit.v);
+      const value =
+        c.key === 'per_bakery' && !p.bakeries
+          ? t['page.why.noBakery']
+          : `${fmtCriterion(c.key, crit.v)}${c.key === 'crime' ? ' ‰' : ''}`;
       return `<div class="pg-why">
         <div class="pg-why-head">
           <span class="pg-why-label">${t[`crit.${c.key}`]} <small>${value}</small></span>
