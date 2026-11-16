@@ -43,7 +43,7 @@ Mockups in `design/` (see `design/README.md`). Layout: left sidebar 380 px, map 
 - Top bar: breadcrumb, counts in view (go / avoid / filtered out), search, zoom buttons.
 - Hover: small tooltip (name, score + label, population).
 - Click: pinned dark card on the right — score, 6 key figures, age pyramid, local economy,
-  score breakdown, "Open commune page →", shortlist star.
+  score breakdown, "Open commune page →", basket button.
 - Floating legend bottom-left (changes in delivery mode).
 
 **Sidebar — filters & priorities.** One row per criterion:
@@ -167,9 +167,16 @@ Kept up to date with every milestone that adds or changes a criterion.
 ## 5. Other MVP features
 - **Search:** commune name autocomplete (accent-insensitive, handles "Saint" / "St"), jumps map + opens card.
 - **URL state:** view, filters, weights, mode, selected commune encoded in the query string → shareable links.
-- **Shortlist:** star from card or page, stored in `localStorage`. Page `/ma-selection/` (noindex): the list,
-  remove, tick up to 3 communes to compare score, inhabitants, growth, bakeries, inhabitants per bakery, income
-  and crime; the most favourable value per row is marked "meilleur" (text + bold, not colour alone).
+- **Basket ("panier", Nov 2026; replaced the starred shortlist, same `localStorage` key):** "Ajouter au panier"
+  button on the card (icon) and the commune page (icon + text); a "Panier (n)" link in every header.
+  Page `/panier/` (noindex; `/ma-selection/` redirects there): the list, remove, tick up to **5** communes to
+  compare score, postcode, inhabitants, growth, bakeries, inhabitants per bakery, bakery age, income and crime;
+  the most favourable value per row is marked "meilleur" (text + bold, not colour alone).
+  **Export PDF:** through the browser's print dialog ("Enregistrer au format PDF"), no PDF library. The page
+  builds an off-screen document — the comparison (when 2+ communes are ticked), then the full commune sheet of
+  every commune in the basket (same renderer as the commune page, `src/lib/commune-view.js`), each starting on a
+  new page — and prints it alone (`body.is-printing`). Maps are drawn one at a time and frozen into images
+  (browsers keep ~16 WebGL contexts), markers laid over them in percentages so they follow the print width.
 - **Responsive (V1, Nov 2026):** on phones (≤ 720 px) the map is the interface: no sliders or weights
   (filters from a shared link still apply, with a "Réinitialiser" link). Top bar: mark, search behind an icon,
   "around me" (geolocation asked only on tap, ~100 km across), and the *En boutique / En tournée* switch.

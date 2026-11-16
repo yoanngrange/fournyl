@@ -1,9 +1,10 @@
 // Header and footer shared by the text pages (sources, updates, legal). Commune pages get the same
 // footer from pipeline/pages.py, as static HTML.
 import t from '../i18n/fr.js';
+import { mountBasketLinks } from './basket.js';
 
 export const LINKS = [
-  ['ma-selection/', 'sel.link'],
+  ['panier/', 'basket.link'],
   ['sources/', 'sources.link'],
   ['infos-legales/#donnees', 'updates.link'],
   ['infos-legales/', 'legal.link'],
@@ -21,10 +22,11 @@ export function addChrome() {
     'beforebegin',
     `<header class="doc-top"><div class="doc-top-inner">
       <a class="brand-link" href="./"><img class="brand-mark" src="img/mark.svg" alt="" width="32" height="32"><span class="brand-name">${t['app.name']}</span></a>
-      <a href="./">${t['sources.back']}</a>
+      <span class="doc-top-links"><a class="basket-link" href="panier/" data-basket-link>${t['basket.link']}</a><a href="./">${t['sources.back']}</a></span>
     </div></header>`,
   );
   main.insertAdjacentHTML('afterend', footerHTML());
+  mountBasketLinks();
 }
 
 export const fill = (s, p) => s.replace(/\{(\w+)\}/g, (_, k) => p[k] ?? `{${k}}`);

@@ -8,7 +8,7 @@ shadows, gradients, purple). Tokens live in `src/styles.css` (`:root`); this fil
 
 1. **Ink on paper.** Content sits on paper, separated by ink rules, not by shadows or rounded boxes.
 2. **One strong colour.** Red (`--rouge`) is the brand: the mark, the rule under the logo,
-   the shortlist star, the callout edge. It never encodes data, so the map can never be read as "red = bad".
+   the basket button when pressed, the callout edge. It never encodes data, so the map can never be read as "red = bad".
 3. **The map is calm.** Data colours are a blue ↔ kraft scale (no red/green, no "Christmas tree").
    Blue = favourable, kraft = unfavourable *and hatched*, warm grey = neutral. Colour-blind safe.
 4. **Figures are typed.** Every number is set in Courier Prime (monospace, tabular), like a delivery note.

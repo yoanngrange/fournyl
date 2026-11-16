@@ -99,6 +99,11 @@ async def main():
                     with open(arg, "wb") as f:
                         f.write(base64.b64decode(r["data"]))
                     print("shot:", arg)
+                elif kind == "--pdf":  # print media, A4, as "Enregistrer au format PDF" would
+                    r = await call("Page.printToPDF", printBackground=True, preferCSSPageSize=True)
+                    with open(arg, "wb") as f:
+                        f.write(base64.b64decode(r["data"]))
+                    print("pdf:", arg)
             for line in logs:
                 print(line)
     finally:

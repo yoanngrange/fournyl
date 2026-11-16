@@ -26,7 +26,7 @@ PAGES = {
     "loire-atlantique/clisson-44043/": 'content="44043"',
     "infos-legales/": "src/legal.js",
     "sources/": "src/sources.js",
-    "ma-selection/": "src/selection.js",
+    "panier/": "src/panier.js",
     "sw.js": "SHELL_FILES",
 }
 
