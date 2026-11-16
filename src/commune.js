@@ -326,7 +326,7 @@ function safetyServices(p) {
     <h3>${t['page.services']}</h3>${svc}${row(t['svc.market'], t['page.market.none'])}`;
 }
 
-function politics(pol) {
+function politics(pol, year) {
   if (!pol || (!pol.mayor && !pol.rounds.length)) return `<p class="pg-muted">${t['card.noPolitics']}</p>`;
   const nuance = (c) => (c ? t[`nuance.${c}`] || c : t['card.noNuance']);
   const head = [
@@ -336,7 +336,7 @@ function politics(pol) {
   ].join('');
   const rounds = pol.rounds
     .map(
-      (r) => `<h3>${tr('card.round', { n: r.round === 1 ? '1er' : '2nd', turnout: pct1(r.turnout) })}</h3>
+      (r) => `<h3>${tr('card.round', { year, n: r.round === 1 ? '1er' : '2nd', turnout: pct1(r.turnout) })}</h3>
       ${r.lists.map((l) => bar(`${esc(l.name)} <small>${nuance(l.nuance)}</small>`, l.pct, l.pct || 0, pct1(l.pct))).join('')}`,
     )
     .join('');
@@ -593,7 +593,7 @@ async function start() {
       ${section('eco', t['card.economy'], tr('card.src.economy', { sirene: sireneMonth, bpe: y.bpe, census: y.census }), economy(p))}
       ${section('inc', t['page.incomeHousing'], `Insee Filosofi ${y.income} · ${tr('card.src.census', { year: y.census })}`, incomeHousing(p, p.dep_name))}
       ${section('safe', t['page.safetyServices'], `SSMSI ${y.crime} · ${tr('card.src.bpe', { year: y.bpe })}`, safetyServices(p))}
-      ${section('pol', t['card.politics'], tr('card.src.politics', { year: y.election }), politics(p.politics))}
+      ${section('pol', t['card.politics'], tr('card.src.politics', { year: y.election }), politics(p.politics, y.election))}
       ${section('bread', t['page.bread'], tr('page.bread.src', { sirene: sireneMonth }),
         `<div class="pg-bread"><div class="pg-bread-map" id="bread-map" role="img" aria-label="${esc(t['page.bread'])}"></div>
           <div><div class="pg-legend">${Object.entries(KIND_COLOURS).map(([k, c]) => `<span><i style="background:${c}"></i>${t[`page.bread.${k}`]}</span>`).join('')}

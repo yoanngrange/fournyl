@@ -23,6 +23,9 @@ def criteria(df: pd.DataFrame) -> pd.DataFrame:
             "income": df["income"],
             "growth": df["growth"],
             "crime": df["crime"],
+            # Mean years since the bakeries were registered (higher: more likely to be sold soon). None
+            # without a bakery in the BPE count: the criterion is then dropped from that commune's score.
+            "bakery_age": df["bakery_age"].where(df["bakeries"] > 0) if "bakery_age" in df else np.nan,
             "sell_soon": np.nan,  # RNE signal arrives in M6
         },
         index=df.index,

@@ -22,7 +22,7 @@ function scale(key, { min, max }) {
 }
 
 const roundValue = (key, v) =>
-  key === 'growth' || key === 'crime' ? Math.round(v * 10) / 10 : key === 'income' ? Math.round(v / 10) * 10 : Math.round(v);
+  key === 'growth' || key === 'crime' || key === 'bakery_age' ? Math.round(v * 10) / 10 : key === 'income' ? Math.round(v / 10) * 10 : Math.round(v);
 
 const THUMB_PX = 20;
 

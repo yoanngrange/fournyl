@@ -260,7 +260,7 @@ GROWTH_FROM, GROWTH_TO = 2017, 2023  # census years compared for the yearly grow
 NO_BAKERY_BOOST = 3  # a commune without a bakery ranks as if it had this × its population per bakery…
 NO_BAKERY_BOOST_FROM = 500  # …but not below this population (ranked as if it had one bakery: too small to sustain one)
 NO_BAKERY_BOOST_FULL = 1000  # full boost from this population, linear in between
-CRITERIA = ["per_bakery", "income", "growth", "crime", "sell_soon"]
+CRITERIA = ["per_bakery", "income", "growth", "crime", "bakery_age", "sell_soon"]
 LOWER_IS_BETTER = {"crime"}
 # Small communes: a rate measured on few people is unstable (4 -> 12 inhabitants = +300 %) and matters
 # less to a baker than the same rate over thousands of customers. Their rank is pulled towards the

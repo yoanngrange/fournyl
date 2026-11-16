@@ -38,7 +38,7 @@ function bboxOf(geometry) {
   return [[w, s], [e, n]];
 }
 
-export function createMap({ container, communes, departements, france, loadGeo, loadAllVisible = () => false, locale, on }) {
+export function createMap({ container, communes, departements, france, loadGeo, extraDeps = () => [], locale, on }) {
   const depBounds = new Map(departements.features.map((f) => [f.properties.code, bboxOf(f.geometry)]));
   const loaded = new Map(); // dep -> features
   const loading = new Set();
@@ -244,14 +244,6 @@ export function createMap({ container, communes, departements, france, loadGeo, 
     return d && !loaded.has(d) ? d : null;
   }
 
-  /** Départements whose bounding box intersects the view. */
-  function visibleDeps() {
-    const b = map.getBounds();
-    return [...depBounds]
-      .filter(([, [[w, s], [e, n]]]) => !(e < b.getWest() || w > b.getEast() || n < b.getSouth() || s > b.getNorth()))
-      .map(([dep]) => dep);
-  }
-
   /** The département in the middle of the view (falls back to bounding boxes over the sea). */
   function centreDeps() {
     const c = map.getCenter();
@@ -263,11 +255,12 @@ export function createMap({ container, communes, departements, france, loadGeo, 
   /**
    * Zoomed in, load the commune polygons of the département in the middle of the view only: neighbours
    * stay a plain shape until the user pans or clicks there (much less to download on a département page).
-   * Delivery mode needs every visible commune, so it loads all visible départements.
+   * Delivery mode adds the départements its delivery area reaches (extraDeps), not every visible one.
    */
+  let ready = false; // the style is loaded: layers can be queried
   function loadVisible() {
-    if (map.getZoom() < COMMUNE_ZOOM - 0.5) return;
-    for (const dep of loadAllVisible() ? visibleDeps() : centreDeps()) {
+    if (!ready || map.getZoom() < COMMUNE_ZOOM - 0.5) return;
+    for (const dep of new Set([...centreDeps(), ...extraDeps()])) {
       if (loaded.has(dep) || loading.has(dep)) continue;
       loading.add(dep);
       notifyBusy();
@@ -329,6 +322,7 @@ export function createMap({ container, communes, departements, france, loadGeo, 
   }
 
   map.once('load', () => {
+    ready = true;
     updateLabels();
     loadVisible();
   });
@@ -392,6 +386,12 @@ export function createMap({ container, communes, departements, france, loadGeo, 
     zoomIn: () => map.zoomIn(),
     zoomOut: () => map.zoomOut(),
     reset: () => map.fitBounds(france, { padding: 24 }),
+    /** Fit [[west, south], [east, north]], with `margin` (share of each side) added around it. */
+    fitBox([[w, s], [e, n]], margin = 0) {
+      const dx = ((e - w) * margin) / 2;
+      const dy = ((n - s) * margin) / 2;
+      map.fitBounds([[w - dx, s - dy], [e + dx, n + dy]], { padding: 12, duration: 800, maxZoom: 13 });
+    },
     /** Centre on a point with about `km` kilometres across the smaller side of the screen. */
     around(lat, lon, km) {
       const dLat = km / 2 / 111;

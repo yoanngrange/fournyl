@@ -84,7 +84,7 @@ def at_place(name: str) -> str:
 
 
 # Scoring recipe: mirror of CRITERIA in src/lib/scoring.js (percentiles 0..1000, missing values skipped).
-WEIGHTS = {"per_bakery": 3, "income": 2, "growth": 2, "crime": 1}
+WEIGHTS = {"per_bakery": 3, "income": 2, "growth": 2, "bakery_age": 2, "crime": 1}
 
 
 def default_score(pct: dict) -> int | None:
@@ -321,8 +321,9 @@ class Site:
 > a bakery in France ("créer ou reprendre une boulangerie", "étude de marché boulangerie"). Every French
 > commune ({_int(len(self.communes))} communes) gets a score out of 100 computed from public open data.
 
-The score combines four criteria, each ranked against all French communes: inhabitants per bakery
-(weight 3), median income (weight 2), population growth (weight 2) and recorded crime (weight 1).
+The score combines five criteria, each ranked against all French communes: inhabitants per bakery
+(weight 3), median income (weight 2), population growth (weight 2), mean age of the existing bakeries
+(weight 2: older shops are more likely to be sold soon) and recorded crime (weight 1).
 Missing values (statistical secrecy) are left out and the weights re-normalised; small communes are pulled
 towards the middle for income and growth. 60 and above is "favourable", below 40 "unfavourable".
 Data comes from Insee (census, BPE, Filosofi, Sirene), the Ministry of the Interior, La Poste, IGN and

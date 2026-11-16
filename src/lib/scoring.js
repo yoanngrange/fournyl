@@ -10,6 +10,7 @@ export const CRITERIA = [
   { key: 'per_bakery', dir: 1, weighted: true, weight: 3 },
   { key: 'income', dir: 1, weighted: true, weight: 2 },
   { key: 'growth', dir: 1, weighted: true, weight: 2 },
+  { key: 'bakery_age', dir: 1, weighted: true, weight: 2 },
   { key: 'crime', dir: -1, weighted: true, weight: 1 },
 ];
 
@@ -76,9 +77,13 @@ export function visibleRanges(communes) {
  * slider, so panning to communes beyond it does not filter them out).
  * A commune passes if every active filter contains its value; a missing value never filters out.
  */
+// A commune without a bakery has "infinitely many" inhabitants per bakery: it passes a minimum, not a maximum.
+const filterValue = (commune, k) =>
+  k === 'per_bakery' && commune.v[k] == null && commune.bakeries === 0 && commune.pop > 0 ? Infinity : commune.v[k];
+
 export const passesFilters = (commune, filters) =>
   Object.entries(filters).every(([k, f]) => {
-    const v = commune.v[k];
+    const v = filterValue(commune, k);
     return v == null || ((f.lo == null || v >= f.lo) && (f.hi == null || v <= f.hi));
   });
 

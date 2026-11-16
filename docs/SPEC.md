@@ -51,7 +51,7 @@ Mockups in `design/` (see `design/README.md`). Layout: left sidebar 380 px, map 
   communes currently **on screen**, recomputed live on pan/zoom. The user's chosen range is kept
   in real units and clamped to the visible bounds for display.
 - ~~An importance select~~ **Decided (Oct 2026): no user weights.** Weights are part of our scoring recipe,
-  fixed and the same for everyone (per_bakery 3, income 2, growth 2, crime 1), explained on the sources page.
+  fixed and the same for everyone (per_bakery 3, income 2, growth 2, bakery_age 2, crime 1), explained on the sources page.
   **Small communes (Nov 2026):** for `income` and `growth` the national rank is pulled towards the middle by
   reliability = pop / (pop + 500) (`SMALL_COMMUNE_K` in `pipeline/config.py`): a 4 → 12 inhabitant commune no longer
   ranks like a town with the same rate. Shown on the commune page ("?" next to *Pourquoi cette note ?*).
@@ -61,7 +61,8 @@ Mockups in `design/` (see `design/README.md`). Layout: left sidebar 380 px, map 
 - Communes outside any active range are shown as "filtered out" and excluded from counts.
 - *Implemented (M2):* a handle left at the end of its slider is **open** (no bound on that side), so panning
   to bigger or smaller communes does not silently filter them out. Population and inhabitants per bakery
-  use a **logarithmic** slider (a city and villages share one range). A missing value never filters out.
+  use a **logarithmic** slider (a city and villages share one range). A missing value never filters out, except
+  that a commune without a bakery counts as infinite inhabitants per bakery (Nov 2026): it passes a minimum, not a maximum.
 - *French labels:* Go / Maybe / Avoid are shown as **Favorable / À étudier / Défavorable**.
 
 Criteria (MVP):
@@ -72,6 +73,7 @@ Criteria (MVP):
 | `per_bakery` | Habitants par boulangerie | inhabitants | higher | High (3) |
 | `income` | Revenu médian | €/year/UC | higher | Medium (2) |
 | `growth` | Évolution de la population | %/year | higher | Medium (2) |
+| `bakery_age` | Ancienneté des boulangeries | mean years since the active 10.71C establishments were registered (Sirene); none without a bakery | higher (older shops: takeover or opening more likely) | Medium (2), Nov 2026 |
 | `crime` | Taux de délinquance | offences /1,000 | lower | Low (1), on by default |
 | `sell_soon` | Boulangeries à reprendre bientôt | count | higher | Low (1) — High in takeover preset |
 
@@ -87,6 +89,9 @@ Criteria (MVP):
 - *Implemented (M5):* before a bakehouse is placed, every commune is shown as with/without a bakery, so clusters of
   bakery-less villages are visible at once; the sidebar ranks the communes on screen by inhabitants without a bakery
   a bakehouse there would serve (up to 1,500 communes on screen). Score filters do not apply in this mode.
+- *Nov 2026:* placing the bakehouse (click, search, or pick in the list; or the commune already selected when
+  switching to this mode) frames the delivery area with ~17.5 % margin around the circle or block. Only the
+  département in view and those the delivery area reaches are loaded, as in shop mode.
 - *Map loading:* while commune polygons download or draw, a "Chargement des communes…" indicator shows and the
   département keeps its colour until its communes are drawn.
 

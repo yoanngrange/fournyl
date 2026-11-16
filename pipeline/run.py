@@ -78,6 +78,7 @@ def main(argv=None):
     df, refs = build_stats.build(communes)
     print("  bakery history (SIRENE) and business prices (BODACC) …", flush=True)
     df = df.join(build_market.bakery_history(set(df.index)))
+    df = df.join(build_market.bakery_age(set(df.index), manifest.get("sirene", {}).get("published")))
     fonds = build_market.fonds_prices(set(communes.dep))
     print("  business sizes, main employers, mayors and 2026 election …", flush=True)
     sizes, employers = build_local.businesses_by_size(set(df.index))
