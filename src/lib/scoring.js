@@ -55,19 +55,44 @@ export const BIN_COLOURS = {
 export const bin = (s) =>
   s == null ? 'unknown' : s >= 75 ? 'top' : s >= 60 ? 'go' : s >= 40 ? 'maybe' : s >= 25 ? 'avoid' : 'worst';
 
-/** Slider bounds = min/max of the raw values of the given communes. */
+// Crime per 1,000 inhabitants explodes where many visitors meet few residents (Roissy-en-France ≈ 990 ‰,
+// ski resorts, Saint-Tropez). The value is kept, but the slider stops at the 99th percentile of the
+// communes on screen so the handles stay usable; the end of the slider (open bound) still includes them.
+const CAPPED = { crime: 0.99 };
+const CAP_MIN_VALUES = 100; // too few communes on screen: no cap
+
+/** Crime rate above which the commune page explains that visitors, not residents, drive the figure. */
+export const CRIME_HIGH = 100;
+
+/** Slider bounds = min/max of the raw values of the given communes (max capped for CAPPED criteria). */
 export function visibleRanges(communes) {
   const out = {};
   for (const c of CRITERIA) {
-    let min = Infinity;
-    let max = -Infinity;
+    const values = [];
     for (const x of communes) {
       const v = x.v[c.key];
-      if (v == null) continue;
+      if (v != null) values.push(v);
+    }
+    if (!values.length) {
+      out[c.key] = null;
+      continue;
+    }
+    let min = Infinity;
+    let max = -Infinity;
+    for (const v of values) {
       if (v < min) min = v;
       if (v > max) max = v;
     }
-    out[c.key] = min <= max ? { min, max } : null;
+    const q = CAPPED[c.key];
+    if (q && values.length >= CAP_MIN_VALUES) {
+      values.sort((a, b) => a - b);
+      const cap = values[Math.floor(q * (values.length - 1))];
+      if (cap < max && cap > min) {
+        out[c.key] = { min, max: cap, capped: true };
+        continue;
+      }
+    }
+    out[c.key] = { min, max };
   }
   return out;
 }
