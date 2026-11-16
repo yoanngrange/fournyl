@@ -1,6 +1,7 @@
 """Generated pages and human-readable URLs (pipeline/pages.py, src/lib/slug.js)."""
 
 import json
+import re
 import shutil
 import subprocess
 
@@ -91,7 +92,8 @@ def test_at_place():
 def test_seo_tags(site, tmp_path):
     page = site.commune_page("44043")
     assert 'property="og:image" content="' + SITE_URL + 'img/og.png"' in page
-    assert '"@type":"BreadcrumbList"' in page and "note 54/100" in page
+    # The score follows the monthly SIRENE stock (bakery age): check its shape, not its value.
+    assert '"@type":"BreadcrumbList"' in page and re.search(r"note \d{1,3}/100", page)
     dep = site.dep_page("44")
     assert dep.count("<title>") == 1 and "Loire-Atlantique (44)" in dep
     assert 'href="loire-atlantique/clisson-44043/"' in dep and "<!-- places -->" not in dep

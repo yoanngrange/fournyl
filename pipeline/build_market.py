@@ -87,6 +87,11 @@ def bakery_history(codes: set[str]) -> pd.DataFrame:
     return out.add_prefix("hist_")
 
 
+# SIRENE writes 1900-01-01 when the creation date is unknown (and has the odd typo, e.g. year 24); the real
+# dates of active bakeries start in the 1950s. Earlier dates are treated as unknown.
+BAKERY_AGE_EARLIEST = pd.Timestamp("1950-01-01")
+
+
 def bakery_age(codes: set[str], on: str | None = None) -> pd.Series:
     """Per commune: mean age in years of its active bakery establishments (10.71C), NaN if none.
 
@@ -105,8 +110,9 @@ def bakery_age(codes: set[str], on: str | None = None) -> pd.Series:
     t = t[t.code.notna()]
     mapping = cog.code_mapping()
     t["code"] = t.code.map(lambda c: mapping.get(c, c))
-    t["years"] = (today - pd.to_datetime(t.created, errors="coerce")).dt.days / 365.25
-    t = t[t.years >= 0]
+    created = pd.to_datetime(t.created, errors="coerce")
+    t["years"] = (today - created.where(created >= BAKERY_AGE_EARLIEST)).dt.days / 365.25
+    t = t[t.years >= 0]  # NaN (unknown date) dropped too
     return t.groupby("code").years.mean().reindex(sorted(codes)).rename("bakery_age")
 
 
