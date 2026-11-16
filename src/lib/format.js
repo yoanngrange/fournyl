@@ -27,6 +27,8 @@ export function fmtCriterion(key, v) {
       return fmtSigned(v);
     case 'crime':
       return dec1.format(v);
+    case 'bakery_age':
+      return `${dec1.format(v)} ans`;
     default:
       return fmtInt(v);
   }

@@ -33,25 +33,48 @@ export function contiguousBlock(baseCode, n, byCode, adjacency) {
   return area;
 }
 
-/** Reach stats for a set of communes served from the bakehouse. */
-export function reach(codes, byCode, baseCode) {
+// Road distance and driving time are estimated, not routed (no routing server): straight line × ROAD_FACTOR,
+// driven at ROAD_SPEED_KMH, a typical average on country roads through villages.
+export const ROAD_FACTOR = 1.3;
+export const ROAD_SPEED_KMH = 50;
+
+/** Estimated road trip for a straight-line distance: { km, minutes }. */
+export const roadTrip = (straightKm) => {
+  const roadKm = straightKm * ROAD_FACTOR;
+  return { km: roadKm, minutes: (60 * roadKm) / ROAD_SPEED_KMH };
+};
+
+/**
+ * Reach stats for a set of communes served from the bakehouse. radiusKm (distance mode): the area is the
+ * circle, so it spans 2 × radius both ways; otherwise the span of the commune centres.
+ */
+export function reach(codes, byCode, baseCode, radiusKm = null) {
   const base = byCode.get(baseCode);
   let n = 0;
   let noBakery = 0;
   let pop = 0;
   let popNoBakery = 0;
+  let bakeries = 0;
   let furthestKm = 0;
+  let [south, north, west, east] = [Infinity, -Infinity, Infinity, -Infinity];
   for (const code of codes) {
     const c = byCode.get(code);
     n++;
     pop += c.pop;
+    bakeries += c.bakeries;
     if (c.bakeries === 0) {
       noBakery++;
       popNoBakery += c.pop;
     }
     furthestKm = Math.max(furthestKm, km(base, c));
+    south = Math.min(south, c.lat);
+    north = Math.max(north, c.lat);
+    west = Math.min(west, c.lon);
+    east = Math.max(east, c.lon);
   }
-  return { n, noBakery, pop, popNoBakery, furthestKm };
+  const northSouthKm = radiusKm ? 2 * radiusKm : n ? km({ lat: south, lon: base.lon }, { lat: north, lon: base.lon }) : 0;
+  const eastWestKm = radiusKm ? 2 * radiusKm : n ? km({ lat: base.lat, lon: west }, { lat: base.lat, lon: east }) : 0;
+  return { n, noBakery, pop, popNoBakery, bakeries, furthestKm, northSouthKm, eastWestKm };
 }
 
 /** Inhabitants without a bakery within radiusKm of each candidate (candidates and pool: communes). */

@@ -87,6 +87,29 @@ def bakery_history(codes: set[str]) -> pd.DataFrame:
     return out.add_prefix("hist_")
 
 
+def bakery_age(codes: set[str], on: str | None = None) -> pd.Series:
+    """Per commune: mean age in years of its active bakery establishments (10.71C), NaN if none.
+
+    Age = years since the establishment was registered; a takeover usually registers a new one, so this
+    reads as "for how long the current bakers have been in place". Old shops: likely sales soon.
+    `on`: reference date, the publication date of the SIRENE stock (stable between two monthly releases).
+    """
+    today = pd.Timestamp(on or date.today())
+    t = pq.read_table(
+        fetch.path("sirene"),
+        columns=["codeCommuneEtablissement", "dateCreationEtablissement"],
+        filters=(pc.field("activitePrincipaleEtablissement") == NAF_BAKERY)
+        & (pc.field("etatAdministratifEtablissement") == "A"),
+    ).to_pandas()
+    t.columns = ["code", "created"]
+    t = t[t.code.notna()]
+    mapping = cog.code_mapping()
+    t["code"] = t.code.map(lambda c: mapping.get(c, c))
+    t["years"] = (today - pd.to_datetime(t.created, errors="coerce")).dt.days / 365.25
+    t = t[t.years >= 0]
+    return t.groupby("code").years.mean().reindex(sorted(codes)).rename("bakery_age")
+
+
 # ---------- Price of a bakery business (BODACC) ----------
 
 _AMOUNT = re.compile(r"(?:prix|montant)[^0-9]{0,60}?([0-9][0-9 .,  ]*)\s*(?:€|eur)", re.I)

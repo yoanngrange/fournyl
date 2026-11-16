@@ -90,7 +90,8 @@ async function start() {
       exported.has(dep)
         ? Promise.all([getJSON(`geo/${dep}.geojson`), loadAdj(dep)]).then(([geo]) => geo)
         : Promise.reject(new Error(dep)),
-    loadAllVisible: () => dlv.on,
+    // Delivery mode: also draw the départements the delivery area reaches (a bakehouse near a border).
+    extraDeps: () => (dlv.on && area ? [...new Set([...area].map((code) => byCode.get(code).dep))] : []),
     locale: {
       'NavigationControl.ZoomIn': t['map.zoomIn'],
       'NavigationControl.ZoomOut': t['map.zoomOut'],
@@ -101,7 +102,7 @@ async function start() {
       hoverDep: showDepTooltip,
       clickCommune: (code) => {
         if (dlv.on) {
-          setBase(code);
+          setBase(code, { zoom: true });
           select(code);
         } else select(code === state.sel ? null : code);
       },
@@ -135,7 +136,7 @@ async function start() {
     },
     pick(id) {
       if (!byCode.has(id)) return mapApi.fitDep(id);
-      if (dlv.on) setBase(id);
+      if (dlv.on) setBase(id, { zoom: true });
       select(id, { fly: true, focus: true });
     },
   });
@@ -148,6 +149,7 @@ async function start() {
     (code) => {
       topbar.classList.remove('is-searching');
       searchOpen.setAttribute('aria-expanded', 'false');
+      if (dlv.on) setBase(code, { zoom: true }); // in delivery mode, a searched commune becomes the bakehouse
       select(code, { fly: true, focus: true });
     },
   );
@@ -248,7 +250,8 @@ async function start() {
     document.getElementById('cover-help').textContent = t[byKm ? 'delivery.helpKm' : 'delivery.helpN'];
   }
 
-  function setBase(code) {
+  /** zoom: frame the delivery area once it is known (after a click, a search or a pick in the list). */
+  function setBase(code, { zoom = false } = {}) {
     dlv.base = code;
     const dep = code?.slice(0, 2);
     if (dep && dlv.cover === 'n') {
@@ -257,9 +260,30 @@ async function start() {
         const nearDeps = new Set((adjacency.get(code) || []).map((x) => x.slice(0, 2)));
         for (const c of [...(adjacency.get(code) || [])].flatMap((x) => adjacency.get(x) || [])) nearDeps.add(c.slice(0, 2));
         return Promise.all([...nearDeps].map(loadAdj));
-      }).then(recompute);
+      }).then(() => {
+        recompute();
+        if (zoom && dlv.base === code) zoomToArea();
+      });
     }
     recompute();
+    if (zoom && dlv.cover === 'km') zoomToArea();
+  }
+
+  /** Frame the delivery area with about 17.5 % more room than the circle (or block) around it. */
+  const AREA_MARGIN = 0.175;
+  function zoomToArea() {
+    const base = dlv.base && byCode.get(dlv.base);
+    if (!base || !area) return;
+    if (dlv.cover === 'km') return mapApi.around(base.lat, base.lon, 2 * dlv.radius * (1 + AREA_MARGIN));
+    // Contiguous block: box of the commune centres, widened by ~2 km so outer communes show whole.
+    const pts = [...area].map((code) => byCode.get(code));
+    const padLat = 2 / 111;
+    const padLon = 2 / (111 * Math.cos((base.lat * Math.PI) / 180));
+    const w = Math.min(...pts.map((c) => c.lon)) - padLon;
+    const e = Math.max(...pts.map((c) => c.lon)) + padLon;
+    const s = Math.min(...pts.map((c) => c.lat)) - padLat;
+    const n = Math.max(...pts.map((c) => c.lat)) + padLat;
+    mapApi.fitBox([[w, s], [e, n]], AREA_MARGIN);
   }
 
   /** Communes served by the bakehouse with the current settings. */
@@ -275,6 +299,7 @@ async function start() {
         ? new Set(withinDistance(base, communes, dlv.radius).map((c) => c.code))
         : contiguousBlock(base.code, dlv.count, byCode, adjacency);
     mapApi.setDelivery(base, dlv.cover === 'km' ? dlv.radius : null);
+    mapApi.loadVisible(); // départements the area reaches beyond the one in view
   }
 
   function renderReach() {
@@ -283,7 +308,7 @@ async function start() {
       el.innerHTML = `<p>${t['delivery.pickBase']}</p>`;
       return;
     }
-    const r = reach(area, byCode, dlv.base);
+    const r = reach(area, byCode, dlv.base, dlv.cover === 'km' ? dlv.radius : null);
     const cell = (label, value, cls = '') => `<div><span>${label}</span><b class="${cls}">${value}</b></div>`;
     el.innerHTML = [
       cell(t['delivery.reach.n'], fmtInt(r.n)),
@@ -300,7 +325,9 @@ async function start() {
       dlv.on = on;
       syncDeliveryControls();
       if (on) mapApi.loadVisible();
-      if (on && dlv.base) setBase(dlv.base);
+      // The commune selected in shop mode becomes the bakehouse: the range settings then apply at once.
+      if (on && !dlv.base && state.sel) setBase(state.sel, { zoom: true });
+      else if (on && dlv.base) setBase(dlv.base);
       else recompute();
     });
   }
@@ -321,7 +348,12 @@ async function start() {
 
   function cardView(c) {
     const v = view.get(c.code);
-    return { score: v.score, cat: v.cat, fill: v.fill, filteredOut: !v.ok, weights: WEIGHTS, depName: depNames[c.dep] };
+    // Delivery mode, card of the bakehouse: also the totals of the whole delivery area.
+    const zone =
+      dlv.on && area && c.code === dlv.base
+        ? { ...reach(area, byCode, dlv.base, dlv.cover === 'km' ? dlv.radius : null), radius: dlv.cover === 'km' ? dlv.radius : null }
+        : null;
+    return { score: v.score, cat: v.cat, fill: v.fill, filteredOut: !v.ok, weights: WEIGHTS, depName: depNames[c.dep], zone };
   }
 
   function select(code, { fly = false, focus = false } = {}) {
@@ -329,7 +361,7 @@ async function start() {
     mapApi.select(state.sel);
     if (state.sel) {
       const c = byCode.get(state.sel);
-      if (fly) mapApi.focus(c);
+      if (fly && !dlv.on) mapApi.focus(c); // delivery mode frames the whole area instead
       card.show(c, cardView(c), { focus });
     } else {
       card.hide();

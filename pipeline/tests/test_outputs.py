@@ -65,6 +65,9 @@ def test_value_ranges(index):
     assert all(v is None or 5_000 < v < 80_000 for v in index["v"]["income"])
     assert all(v is None or -20 < v < 25 for v in index["v"]["growth"])
     assert all(v is None or v >= 0 for v in index["v"]["crime"])
+    assert all(v is None or 0 <= v < 150 for v in index["v"]["bakery_age"])
+    # Mean bakery age only where the commune has a bakery.
+    assert all(v is None or b > 0 for v, b in zip(index["v"]["bakery_age"], index["bakeries"]))
 
 
 def test_missing_values_stay_missing(index):

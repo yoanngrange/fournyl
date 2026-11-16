@@ -69,8 +69,8 @@ departements.geojson         simplified boundaries + {code, name, n_communes}
 communes-index.json          one row per commune, compact columnar JSON (~35k rows):
                                code, name, dep, cp, lat, lon, pop, bakeries,
                                cp: postcodes, space-separated, sorted ("" if unknown)
-                               v:   {per_bakery, income, growth, crime, sell_soon}   // raw values, null if missing
-                               pct: {per_bakery, income, growth, crime, sell_soon}   // 0..1000 ints, already inverted where lower is better
+                               v:   {per_bakery, income, growth, crime, bakery_age, sell_soon}   // raw values, null if missing
+                               pct: {per_bakery, income, growth, crime, bakery_age, sell_soon}   // 0..1000 ints, already inverted where lower is better
 geo/{dep}.geojson            commune polygons for one département (loaded on zoom)
 adj/{dep}.json               { code: [neighbour codes] }   // may include codes from adjacent départements
 commune/{code}.json          everything for the commune page (pyramid, history, sectors, amenities,

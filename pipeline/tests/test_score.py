@@ -34,6 +34,25 @@ def test_crime_is_inverted_and_no_bakery_is_boosted():
     assert pct["sell_soon"].isna().all()
 
 
+def test_older_bakeries_rank_higher():
+    df = pd.DataFrame(
+        {
+            "pop": [1000, 1000, 1000, 1000],
+            "bakeries": [1, 1, 2, 0],
+            "income": 20000,
+            "growth": 0.1,
+            "crime": 5.0,
+            "bakery_age": [3.0, 25.0, 12.0, 40.0],
+        },
+        index=["young", "old", "mid", "none"],
+    )
+    raw = score.criteria(df)
+    assert np.isnan(raw.at["none", "bakery_age"])  # no bakery: criterion dropped
+    pct = score.percentiles(raw, df)
+    assert pct.at["old", "bakery_age"] == 1000 and pct.at["young", "bakery_age"] == 0
+    assert np.isnan(pct.at["none", "bakery_age"])
+
+
 def test_no_bakery_factor_threshold():
     pop = pd.Series([50, 500, 750, 1000, 5000])
     assert score.no_bakery_factor(pop).tolist() == [1, 1, 2, 3, 3]
@@ -51,7 +70,7 @@ def test_small_communes_pulled_to_the_middle():
         index=[f"{i:05d}" for i in range(n + 2)],
     )
     raw = pd.DataFrame(
-        {"per_bakery": 100.0, "income": 20_000.0, "growth": [9.0, 9.0] + [i / 100 for i in range(n)], "crime": 1.0, "sell_soon": float("nan")},
+        {"per_bakery": 100.0, "income": 20_000.0, "growth": [9.0, 9.0] + [i / 100 for i in range(n)], "crime": 1.0, "bakery_age": 10.0, "sell_soon": float("nan")},
         index=df.index,
     )
     pct = score.percentiles(raw, df)

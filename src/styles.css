@@ -83,7 +83,7 @@ button { font: inherit; }
 .crit { display: flex; flex-direction: column; gap: 2px; }
 .crit-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 28px; }
 .crit-label { font-size: 14px; font-weight: 700; }
-.crit-unit { font-weight: 400; color: var(--ink-3); font-size: 12px; }
+.crit-unit { display: block; font-weight: 400; color: var(--ink-3); font-size: 12px; }
 .crit-vals { display: flex; justify-content: space-between; font-family: var(--font-num); font-size: 12px; color: var(--ink-3); }
 .crit.is-empty .dual { opacity: 0.4; }
 
@@ -253,6 +253,10 @@ button { font: inherit; }
 .kpi b { font-family: var(--font-num); font-size: 19px; color: var(--ink); }
 .kpi small { font-size: 11px; color: var(--ink-3); }
 .card-source { margin: -4px 0 0; font-size: 11px; color: var(--ink-3); }
+.card-zone { gap: 6px; padding-top: 12px; border-top: var(--line); }
+.card-zone h3 { font-size: 14px; }
+.card-zone .kpi b { font-size: 16px; }
+.card-zone .card-source { margin: 4px 0 0; }
 .card-actions { display: flex; gap: 8px; flex-shrink: 0; }
 .card-page {
   flex: 1; height: 46px; display: flex; align-items: center; justify-content: center;
@@ -383,7 +387,7 @@ button { font: inherit; }
     position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: none; z-index: 40; gap: 10px;
     border-width: 1.5px 0 0; box-shadow: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   }
-  .card .kpis, .card .card-source { display: none; }
+  .card .kpis, .card .card-source, .card .card-zone { display: none; }
   .card-head { padding-bottom: 8px; }
   .card-name { font-size: 24px; }
   .card-score b { font-size: 26px; }
