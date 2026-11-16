@@ -36,6 +36,8 @@ jobs:
         with:
           path: pipeline/raw
           key: raw-${{ steps.month.outputs.value }}-${{ hashFiles('pipeline/config.py') }}
+          # A config.py change (e.g. a new criterion) starts from this month's downloads instead of none.
+          restore-keys: raw-${{ steps.month.outputs.value }}-
 
       - name: Build data
         run: uv run python -m pipeline.run --all

@@ -136,7 +136,8 @@ def test_clisson_snapshot(meta):
     current = {
         "pop": page["pop"],
         "bakeries": page["bakeries"],
-        "criteria": page["criteria"],
+        # bakery_age follows the monthly SIRENE stock: left out so the snapshot changes only with the slower sources.
+        "criteria": {k: v for k, v in page["criteria"].items() if k != "bakery_age"},
         "history": page["history"],
         "income": page["income"],
         "amenities": page["amenities"],
