@@ -112,6 +112,12 @@ Income & housing (median vs département vs France, poverty rate, second homes, 
 Safety & services (crime vs département vs France, schools, pharmacy, doctors, post office, station; market day "not in open data yet") ·
 Next steps (Pro teasers: bank study, bakeries for sale; opt-in "put me in touch with a broker") · Sources footer.
 
+*Nov 2026 — points of sale of bread (map + list within 5 km):* each point shows the level of its latest
+official hygiene inspection published on Alim'Confiance (four ministry levels, with the month; four-dot
+pictogram plus text, never colour), and how many of the listed points have one. Above the list, the tap-water
+hardness of the commune (°f and class, with the range when the networks serving it differ by 5 °f or more)
+and a short note on scaling for ovens and proofers. Neither enters the score.
+
 Pre-render commune pages as static HTML at build time: they are valuable for SEO
 ("boulangerie à reprendre {commune}"). GitHub Pages has no URL rewriting, so `/commune/{code}/index.html`
 must exist as a file. One build command generates all ~35k pages (≈ 10 kB each, ≈ 350 MB, under the

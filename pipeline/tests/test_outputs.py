@@ -191,13 +191,41 @@ def test_bread_points(index):
         assert len(pts) <= 300
         assert [p["km"] for p in pts] == sorted(p["km"] for p in pts)
         for p in pts:
-            assert set(p) == {"lat", "lon", "km", "kind", "name", "year", "here"}
+            assert set(p) == {"lat", "lon", "km", "kind", "name", "year", "here", "hyg", "hyg_date"}
+            assert p["hyg"] in {None, 1, 2, 3, 4}
+            assert (p["hyg"] is None) == (p["hyg_date"] is None)
+            assert p["hyg_date"] is None or re.fullmatch(r"20\d\d-[01]\d", p["hyg_date"])
             assert p["kind"] in {"bakery", "pastry", "bake_off", "retail"} and p["km"] <= 5.0
             assert p["year"] is None or 1900 <= p["year"] <= 2100
             assert isinstance(p["here"], bool)
     clisson = load("commune/44043.json")["bread_points"]
     assert any(p["here"] for p in clisson) and any(not p["here"] for p in clisson)
     assert sum(p["year"] is not None for p in clisson) >= 0.9 * len(clisson)
+
+
+def test_hygiene_inspections(index):
+    """Alim'Confiance results reach the bread points (joined on SIRET, which is never exported)."""
+    pts = [pt for code in index["code"] for pt in load(f"commune/{code}.json")["bread_points"] if pt["here"]]
+    rated = [pt for pt in pts if pt["hyg"]]
+    if any(c.startswith("44") for c in index["code"]):
+        assert 0.05 * len(pts) <= len(rated) <= 0.6 * len(pts), "inspections cover a minority of shops each year"
+        assert sum(pt["hyg"] <= 2 for pt in rated) >= 0.7 * len(rated), "most results are (très) satisfaisant"
+
+
+def test_water_hardness(index, meta):
+    assert meta["years"]["water"] >= 2024
+    classes = {"very_soft", "soft", "medium", "hard", "very_hard"}
+    with_water = 0
+    for code in index["code"]:
+        w = load(f"commune/{code}.json")["water"]
+        if w is None:
+            continue
+        with_water += 1
+        assert set(w) == {"year", "th", "min", "max", "networks", "class"}
+        assert 0 <= w["min"] <= w["th"] <= w["max"] <= 150 and w["networks"] >= 1 and w["class"] in classes
+    assert with_water >= 0.8 * len(index["code"])
+    if "44043" in index["code"]:  # Clisson: soft to medium water from the Vignoble network
+        assert 10 <= load("commune/44043.json")["water"]["th"] <= 25
 
 
 def test_postcodes(index):

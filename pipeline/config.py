@@ -18,6 +18,7 @@ ANALYTICS_TOKEN = os.environ.get("CF_BEACON_TOKEN", "")
 
 # One COG (Code officiel géographique) vintage per run. Every commune is keyed on its code in this vintage.
 COG_YEAR = 2026
+WATER_YEAR = 2025  # last complete year of the ARS tap-water file; the current year is partial
 
 MELODI = "https://api.insee.fr/melodi/file"
 IGN = (
@@ -195,6 +196,28 @@ SOURCES = {
         "licence": "CC0 (données) ; photos sous leur propre licence, créditées sur la page",
         "page": "https://www.wikidata.org/",
     },
+    "eau_potable": {
+        "name": "Contrôle sanitaire de l'eau distribuée — dureté (titre hydrotimétrique)",
+        "producer": "Ministère de la Santé (ARS)",
+        "vintage": str(WATER_YEAR),
+        "datagouv": {
+            "dataset": "resultats-du-controle-sanitaire-de-leau-distribuee-commune-par-commune",
+            "title_startswith": f"dis-{WATER_YEAR}.zip",
+            "format": "zip",
+        },
+        "licence": "Licence Ouverte 2.0",
+        "page": "https://www.data.gouv.fr/datasets/resultats-du-controle-sanitaire-de-leau-distribuee-commune-par-commune",
+    },
+    "alimconfiance": {
+        "name": "Alim'Confiance — résultats des contrôles sanitaires (12 derniers mois)",
+        "producer": "Ministère de l'Agriculture (DGAL)",
+        "vintage": "12 derniers mois",
+        "url": "https://dgal.opendatasoft.com/api/explore/v2.1/catalog/datasets/export_alimconfiance/exports/csv"
+        "?delimiter=%3B&select=siret%2Cdate_inspection%2Capp_code_synthese_eval_sanit",
+        "suffix": ".csv",
+        "licence": "Licence Ouverte 2.0",
+        "page": "https://alimconfiance.agriculture.gouv.fr/",
+    },
     "sirene": {
         "name": "Base Sirene des établissements",
         "producer": "Insee",
@@ -270,3 +293,8 @@ SMALL_COMMUNE_K = {"income": 500, "growth": 500}
 # Overseas départements are out of the MVP (codes 971-976 have three-digit département codes).
 def in_scope(dep_code: str) -> bool:
     return len(dep_code) == 2
+
+# --- Tap water hardness (ARS sanitary control) and hygiene inspections (Alim'Confiance) ---
+WATER_PARAM = "TH"  # titre hydrotimétrique, in degrés français (°f)
+# Hardness classes in °f (upper bounds), the scale used by water utilities and the CIEau.
+WATER_CLASSES = [(7, "very_soft"), (15, "soft"), (25, "medium"), (35, "hard"), (float("inf"), "very_hard")]

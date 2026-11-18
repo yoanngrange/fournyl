@@ -424,11 +424,35 @@ const IGN_PLAN =
   '&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png';
 const KIND_COLOURS = { bakery: '#FF0000', pastry: '#E08A5A', bake_off: '#1E3F8A', retail: '#8A8172' };
 
+const monthYear = (ym) => new Date(`${ym}-01T12:00:00`).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
+/** Alim'Confiance publishes a result for one year: one older than that (data built a while ago) is not shown. */
+function hygiene(b) {
+  if (!b.hyg || !b.hyg_date) return null;
+  const limit = new Date();
+  limit.setFullYear(limit.getFullYear() - 1);
+  return new Date(`${b.hyg_date}-28`) >= limit ? { level: b.hyg, date: monthYear(b.hyg_date) } : null;
+}
+
+const hygieneText = (h) => `${tr('page.hyg', { level: t[`page.hyg.${h.level}`] })} (${tr('page.hyg.on', { date: h.date })})`;
+
 function breadRow(b) {
   const since = b.year ? ` · ${tr('page.bread.since', { year: b.year })}` : '';
+  const h = hygiene(b);
+  const hyg = h ? `<small class="pg-hyg is-${h.level}"><i aria-hidden="true">${'●'.repeat(5 - h.level)}${'○'.repeat(h.level - 1)}</i> ${hygieneText(h)}</small>` : '';
   return `<li><span class="pg-dot" style="background:${KIND_COLOURS[b.kind]}"></span>
-    <span>${b.name ? esc(b.name) : `<i>${t['page.bread.noName']}</i>`} <small>${t[`page.bread.${b.kind}`]}${since}</small></span>
+    <span>${b.name ? esc(b.name) : `<i>${t['page.bread.noName']}</i>`} <small>${t[`page.bread.${b.kind}`]}${since}</small>${hyg}</span>
     <b>${b.km.toFixed(1).replace('.', ',')} km</b></li>`;
+}
+
+/** Tap water hardness of the commune (median of the networks serving it). */
+function water(p, year) {
+  const w = p.water;
+  const dec = (x) => x.toFixed(1).replace('.', ',');
+  const label = w ? `${t['page.water']}, ${t[`page.water.${w.class}`]}` : t['page.water'];
+  const value = w ? `${dec(w.th)} °f` : t['page.water.none'];
+  const range = w && w.max - w.min >= 5 ? `<p class="pg-muted small">${tr('page.water.range', { min: dec(w.min), max: dec(w.max) })}</p>` : '';
+  return `<div class="pg-water">${row(label, value, tr('page.water.hint', { year: w?.year ?? year }))}${range}</div>`;
 }
 
 /** Points of sale in the commune first, then the others within 5 km; nearest first in each group. */
@@ -436,9 +460,11 @@ function breadList(p) {
   if (!p.bread_points.length) return `<p class="pg-muted">${t['page.bread.none']}</p>`;
   const here = p.bread_points.filter((b) => b.here);
   const around = p.bread_points.filter((b) => !b.here);
+  const checked = p.bread_points.filter(hygiene).length;
+  const count = `<p class="pg-muted small pg-hyg-count">${checked ? tr('page.hyg.count', { n: fmtInt(checked), total: fmtInt(p.bread_points.length) }) : t['page.hyg.countNone']}.</p>`;
   const group = (title, list, empty) => `<h3 class="pg-points-title">${title} <span>${fmtInt(list.length)}</span></h3>
     ${list.length ? `<ul class="pg-points">${list.map(breadRow).join('')}</ul>` : `<p class="pg-muted small">${empty}</p>`}`;
-  return `<div class="pg-points-wrap">${group(t['page.bread.here'], here, t['page.bread.hereNone'])}${
+  return `${count}<div class="pg-points-wrap">${group(t['page.bread.here'], here, t['page.bread.hereNone'])}${
     around.length ? group(t['page.bread.around'], around, '') : ''}</div>`;
 }
 
@@ -493,7 +519,7 @@ function breadMap(el, p, { print = false, ...mapOptions } = {}) {
     el.style.background = KIND_COLOURS[b.kind];
     el.setAttribute('aria-label', `${b.name || t['page.bread.noName']}, ${t[`page.bread.${b.kind}`]}`);
     const popup = new maplibregl.Popup({ offset: 12, closeButton: false }).setHTML(
-      `<b>${b.name ? esc(b.name) : t['page.bread.noName']}</b><br>${t[`page.bread.${b.kind}`]}${b.year ? ` · ${tr('page.bread.since', { year: b.year })}` : ''} · ${b.km.toFixed(1).replace('.', ',')} km`,
+      `<b>${b.name ? esc(b.name) : t['page.bread.noName']}</b><br>${t[`page.bread.${b.kind}`]}${b.year ? ` · ${tr('page.bread.since', { year: b.year })}` : ''} · ${b.km.toFixed(1).replace('.', ',')} km${hygiene(b) ? `<br>${hygieneText(hygiene(b))}` : ''}`,
     );
     markers.push(new maplibregl.Marker({ element: el }).setLngLat([b.lon, b.lat]).setPopup(popup).addTo(map));
   }
@@ -600,11 +626,13 @@ export function communeHTML(p, meta, fonds, { idp = '', actions = true, inBasket
       ${section(`${idp}pol`, t['card.politics'], tr('card.src.politics', { year: y.election }), politics(p.politics, y.election))}
       ${section(`${idp}bread`, t['page.bread'], tr('page.bread.src', { sirene: sireneMonth }),
         `<div class="pg-bread"><div class="pg-bread-map" id="${idp}bread-map" role="img" aria-label="${esc(t['page.bread'])}"></div>
-          <div><div class="pg-legend">${Object.entries(KIND_COLOURS).map(([k, c]) => `<span><i style="background:${c}"></i>${t[`page.bread.${k}`]}</span>`).join('')}
+          <div>${water(p, y.water)}<div class="pg-legend">${Object.entries(KIND_COLOURS).map(([k, c]) => `<span><i style="background:${c}"></i>${t[`page.bread.${k}`]}</span>`).join('')}
             <span><i class="is-pin"></i>${t['page.bread.townHall']}</span></div>${breadList(p)}
-          <p class="pg-muted small pg-bread-note">${t['page.bread.note']}</p></div></div>`, true)}
+          <p class="pg-muted small pg-bread-note">${t['page.bread.note']}</p>
+          <p class="pg-muted small">${t['page.hyg.note']}</p>
+          <p class="pg-muted small">${t['page.water.note']}</p></div></div>`, true)}
     </div>
-    <p class="pg-sources">${tr('page.sources', { census: y.census, income: y.income, bpe: y.bpe, sirene: sireneMonth, crime: y.crime, election: y.election })}<a href="sources/">${t['sources.link']}</a></p>
+    <p class="pg-sources">${tr('page.sources', { census: y.census, income: y.income, bpe: y.bpe, sirene: sireneMonth, crime: y.crime, election: y.election, water: y.water })}<a href="sources/">${t['sources.link']}</a></p>
     <div class="callout pg-disclaimer"><p>${tr('page.disclaimer', { built: new Date(meta.built_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) })}</p></div>`;
 }
 

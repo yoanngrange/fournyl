@@ -17,6 +17,7 @@ async function start() {
     census: meta.years.census,
     growthFrom: meta.years.growth_from,
     crime: meta.years.crime,
+    water: meta.years.water,
     bakeryGap: pct(meta.checks.bakeries.gap),
     crimeMissing: pct(meta.checks.missing_share.crime),
     cog: meta.cog_year,
