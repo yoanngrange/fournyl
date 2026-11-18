@@ -22,6 +22,7 @@ from pipeline.config import (
     HISTORY_FROM,
     OUT,
     SOURCES,
+    WATER_YEAR,
 )
 
 NEARBY_KM = 10
@@ -71,7 +72,7 @@ def meta(manifest: dict, deps: list[str], checks: dict) -> dict:
         "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "departements": deps,
         "percentiles": "France métropolitaine et Corse",
-        "years": {"census": GROWTH_TO, "growth_from": GROWTH_FROM, "crime": CRIME_YEAR, "income": 2023, "bpe": 2025, "election": 2026},
+        "years": {"census": GROWTH_TO, "growth_from": GROWTH_FROM, "crime": CRIME_YEAR, "income": 2023, "bpe": 2025, "election": 2026, "water": WATER_YEAR},
         "checks": checks,
         "sources": sources,
     }
@@ -97,7 +98,7 @@ def index(df: pd.DataFrame, centres: pd.DataFrame, raw: pd.DataFrame, pct: pd.Da
 
 
 def commune_page(
-    code, row, all_rows, centres, dep_names, income_ref, raw, pct, neighbours, employers, politics, bread, wiki
+    code, row, all_rows, centres, dep_names, income_ref, raw, pct, neighbours, employers, politics, bread, water, wiki
 ) -> dict:
     hist = [[int(c[4:]), int(row[c])] for c in all_rows.columns if c.startswith("pop_") and pd.notna(row[c])]
     bands = [label for _, label in AGE_BANDS]
@@ -151,6 +152,7 @@ def commune_page(
         },
         "politics": politics.get(code),
         "bread_points": bread.get(code, []),
+        "water": water.get(code),  # tap water hardness, null without a measure that year
         "wiki": wiki.get(code),  # Commons file name and fr.wikipedia article
         "bakery_history": {
             "since": int(HISTORY_FROM[:4]),
@@ -177,7 +179,7 @@ def commune_page(
 
 
 def write_all(
-    df, centres, raw, pct, display_geom, deps_gdf, adjacency, income_ref, fonds, employers, politics, bread, wiki,
+    df, centres, raw, pct, display_geom, deps_gdf, adjacency, income_ref, fonds, employers, politics, bread, water, wiki,
     manifest, deps, checks,
 ):
     """Replace public/data with the outputs for the given départements."""
@@ -206,6 +208,6 @@ def write_all(
 
     for code, row in scope.iterrows():
         page = commune_page(
-            code, row, df, centres, dep_names, income_ref, raw, pct, adjacency.get(code, []), employers, politics, bread, wiki
+            code, row, df, centres, dep_names, income_ref, raw, pct, adjacency.get(code, []), employers, politics, bread, water, wiki
         )
         _write(OUT / "commune" / f"{code}.json", page)

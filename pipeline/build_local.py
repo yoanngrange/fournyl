@@ -154,9 +154,30 @@ BREAD_RADIUS_M = 5_000
 BREAD_MAX_POINTS = 300  # nearest first: big cities would otherwise list thousands
 
 
+def hygiene() -> pd.DataFrame:
+    """Latest Alim'Confiance inspection per SIRET: level 1 (très satisfaisant) to 4 (à corriger de manière urgente).
+
+    The ministry publishes each result for one year after the inspection. When one establishment was
+    inspected twice on its latest date (several activities), the worse level is kept.
+    """
+    a = pd.read_csv(fetch.path("alimconfiance"), sep=";", dtype=str, encoding="utf-8-sig")
+    a.columns = ["siret", "date", "level"]
+    a["level"] = pd.to_numeric(a.level, errors="coerce")
+    a["date"] = a.date.str[:7]  # month is enough, and what the page shows
+    a = a.dropna(subset=["siret", "date", "level"])
+    a = a[a.level.between(1, 4)]
+    return (
+        a.sort_values(["siret", "date", "level"])
+        .drop_duplicates("siret", keep="last")
+        .set_index("siret")[["level", "date"]]
+        .astype({"level": int})
+    )
+
+
 def bread_points(centres: pd.DataFrame) -> dict:
     """Per commune: bakeries, pastry shops, bake-off points and bread shops within BREAD_RADIUS_M of its centre.
 
+    Each point carries the hygiene level of its latest inspection published on Alim'Confiance, if any.
     Only establishments released publicly in SIRENE. Name = shop sign, usual name, or the company name for
     legal entities; never the name of a sole trader (a person).
     """
@@ -166,6 +187,7 @@ def bread_points(centres: pd.DataFrame) -> dict:
         fetch.path("sirene"),
         columns=[
             "siren",
+            "siret",
             "activitePrincipaleEtablissement",
             "statutDiffusionEtablissement",
             "enseigne1Etablissement",
@@ -178,7 +200,7 @@ def bread_points(centres: pd.DataFrame) -> dict:
         filters=(pc.field("etatAdministratifEtablissement") == "A")
         & pc.field("activitePrincipaleEtablissement").isin(list(BREAD_KINDS)),
     ).to_pandas()
-    t.columns = ["siren", "naf", "public", "sign", "usual_name", "x", "y", "created", "commune"]
+    t.columns = ["siren", "siret", "naf", "public", "sign", "usual_name", "x", "y", "created", "commune"]
     t["x"] = pd.to_numeric(t.x, errors="coerce")
     t["y"] = pd.to_numeric(t.y, errors="coerce")
     t = t[(t.public == "O") & t.x.notna() & t.y.notna()]
@@ -196,10 +218,12 @@ def bread_points(centres: pd.DataFrame) -> dict:
     # Year the current establishment was registered: a takeover usually creates a new one, so this is
     # rather "since when the current operator runs it" than the age of the shop.
     t["year"] = pd.to_datetime(t.created, errors="coerce").dt.year  # parquet stores a date
+    # Hygiene level of the latest official inspection (Alim'Confiance), joined on SIRET; the SIRET itself is not exported.
+    t = t.assign(siret=t.siret.astype(str)).join(hygiene(), on="siret")
     mapping = cog.code_mapping()  # arrondissements and merged communes -> current commune
     t["home"] = t.commune.map(lambda c: mapping.get(c, c) if isinstance(c, str) else None)
 
-    pts = gpd.GeoDataFrame(t[["name", "kind", "year", "home"]], geometry=gpd.points_from_xy(t.x, t.y), crs=2154)
+    pts = gpd.GeoDataFrame(t[["name", "kind", "year", "home", "level", "date"]], geometry=gpd.points_from_xy(t.x, t.y), crs=2154)
     ll = pts.to_crs(4326)
     pts["lat"] = ll.geometry.y.round(5)
     pts["lon"] = ll.geometry.x.round(5)
@@ -221,6 +245,8 @@ def bread_points(centres: pd.DataFrame) -> dict:
                 "name": r.name if isinstance(r.name, str) else None,
                 "year": int(r.year) if pd.notna(r.year) else None,
                 "here": r.home == code,
+                "hyg": int(r.level) if pd.notna(r.level) else None,
+                "hyg_date": r.date if isinstance(r.date, str) else None,
             }
             for r in g.head(BREAD_MAX_POINTS).itertuples()
         ]

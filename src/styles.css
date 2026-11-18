@@ -605,6 +605,11 @@ body.page { height: auto; background: var(--paper); overflow-x: clip; }
 .pg-points li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 0; border-bottom: var(--line-soft); font-size: 13px; }
 .pg-points small { color: var(--ink-3); }
 .pg-points b { font-family: var(--font-num); white-space: nowrap; }
+.pg-hyg { display: block; margin-top: 2px; }
+.pg-hyg i { font-style: normal; letter-spacing: 1px; color: var(--ink); }
+.pg-hyg.is-3, .pg-hyg.is-4 { color: var(--ink); font-weight: 700; } /* never red: red does not encode data (DESIGN.md) */
+.pg-hyg-count { margin: 0 0 8px; }
+.pg-water { margin-bottom: 12px; }
 .pg-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .bread-pin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #FFFFFF; box-shadow: 0 0 0 1px var(--ink); cursor: pointer; padding: 0; }
 .bread-pin:focus-visible { outline: 3px solid var(--bleu); outline-offset: 2px; }
