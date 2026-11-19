@@ -118,8 +118,26 @@ def test_commune_pages_exist(index):
         assert (OUT / "commune" / f"{code}.json").exists()
 
 
+def test_bakery_pages(index):
+    """One record per bakery / pastry shop; a sole trader (a person) is never named by company, has no company
+    figures and is kept out of search engines."""
+    shops = [b for code in index["code"] if (OUT / "bakery" / f"{code}.json").exists() for b in load(f"bakery/{code}.json")]
+    if not any(c.startswith("44") for c in index["code"]):
+        pytest.skip("dep 44 not built")
+    assert len(shops) > 500 and len({b["id"] for b in shops}) == len(shops)
+    for b in shops:
+        assert b["kind"] in {"bakery", "pastry"} and b["address"]
+        assert len(b["near"]) <= 8 and all(n["m"] <= 2000 for n in b["near"])
+        assert all((n["path"] is None) or n["path"].endswith("/") for n in b["near"])
+        if b["sole_trader"]:
+            assert b["accounts"] is None and b["company_created"] is None and b["network"] is None and not b["indexed"]
+        if b["accounts"]:
+            assert b["accounts"]["revenue"] > 0 and len(b["accounts"]["closed"]) == 7
+    assert sum(bool(b["accounts"]) for b in shops) >= 0.05 * len(shops)
+
+
 def test_privacy_no_individual_data():
-    """CLAUDE.md: only aggregates per commune; never a SIRET, a person or a birth year."""
+    """CLAUDE.md: never a SIRET, a director, a person's birth year (bakery pages use their own id)."""
     siret = re.compile(r"\b\d{14}\b")
     forbidden_keys = re.compile(r'"[^"]*(siret|birth|naissance|dirigeant|director)[^"]*"\s*:')
     for path in OUT.rglob("*.json"):
@@ -195,7 +213,8 @@ def test_bread_points(index):
         assert len(pts) <= 300
         assert [p["km"] for p in pts] == sorted(p["km"] for p in pts)
         for p in pts:
-            assert set(p) == {"lat", "lon", "km", "kind", "name", "year", "here", "hyg", "hyg_date"}
+            assert set(p) == {"lat", "lon", "km", "kind", "name", "year", "here", "hyg", "hyg_date", "id"}
+            assert (p["id"] is not None) == (p["kind"] in {"bakery", "pastry"})
             assert p["hyg"] in {None, 1, 2, 3, 4}
             assert (p["hyg"] is None) == (p["hyg_date"] is None)
             assert p["hyg_date"] is None or re.fullmatch(r"20\d\d-[01]\d", p["hyg_date"])

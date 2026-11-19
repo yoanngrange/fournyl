@@ -110,3 +110,18 @@ def test_seo_tags(site, tmp_path):
     sitemap = (tmp_path / "sitemap.xml").read_text()
     assert sitemap.count("<url>") == 2 + len(site.exported) + len(site.communes) and "<lastmod>" in sitemap
     assert "noindex" in (tmp_path / "panier/index.html").read_text()
+
+
+def test_bakery_pages(site):
+    """Each bakery has its page; a sole trader's page is kept out of search engines and sitemaps."""
+    shops = site.shops("44043")
+    if not shops:
+        pytest.skip("no bakery data")
+    page = site.route(site.bakery_path("44043", shops[0]))
+    assert page and 'name="fournyl-bakery"' in page and "{{" not in page
+    sole = next((b for code in site.communes for b in site.shops(code) if not b["indexed"]), None)
+    if sole:
+        code = next(c for c in site.communes if sole in site.shops(c))
+        html_ = site.bakery_page(code, sole)
+        assert '<meta name="robots" content="noindex">' in html_ and '"@type":"Bakery"' not in html_
+        assert all(site.bakery_path(code, sole) not in sm for sm in site.bakery_sitemaps())

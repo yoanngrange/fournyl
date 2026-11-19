@@ -4,23 +4,23 @@ import * as maplibregl from '../../vendor/maplibre-gl-6.11.2/maplibre-gl.mjs';
 import t from '../i18n/fr.js';
 import { BIN_COLOURS, CRITERIA, WEIGHTS, bin, category, score } from './scoring.js';
 import { fmtCriterion, fmtEuro, fmtInt, fmtPct, fmtSigned, helpLink, textClass, tr } from './format.js';
-import { depPath } from './slug.js';
+import { bakerySlug, communePath, depPath } from './slug.js';
 import { basketButton } from './basket.js';
 
 export const getJSON = (path) => fetch(`data/${path}`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(path))));
 export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
 const pct1 = (x) => (x == null ? '—' : `${x.toFixed(1).replace('.', ',')} %`);
 
-const row = (label, value, hint = '') =>
+export const row = (label, value, hint = '') =>
   `<div class="pg-row"><span>${label}${hint ? ` <small>${hint}</small>` : ''}</span><b class="${textClass(value).trim()}">${value}</b></div>`;
 /** One figure of a figures grid (<dl class="pg-tiles">): label, value, and an optional note (year, unit). */
-const tile = (label, value, sub = '') =>
+export const tile = (label, value, sub = '') =>
   `<div class="pg-tile"><dt>${label}</dt><dd class="pg-tile-v${textClass(value)}">${value}</dd>${sub ? `<dd class="pg-tile-sub">${sub}</dd>` : ''}</div>`;
 /** Parts of a block side by side on wide screens (one column each), stacked on phones. */
-const cols = (...parts) => `<div class="pg-cols">${parts.filter(Boolean).map((x) => `<div>${x}</div>`).join('')}</div>`;
+export const cols = (...parts) => `<div class="pg-cols">${parts.filter(Boolean).map((x) => `<div>${x}</div>`).join('')}</div>`;
 
 /** A block of the sheet; help: anchor on the help page, shown as a "?" next to the title. */
-const section = (id, title, help, body) =>
+export const section = (id, title, help, body) =>
   `<section class="pg-card" aria-labelledby="${id}">
     <h2 id="${id}">${title}${help ? helpLink(help, esc(title.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim())) : ''}</h2>${body}</section>`;
 const bar = (label, value, share, text) =>
@@ -415,12 +415,12 @@ const postcodes = (list = []) =>
 
 // ---------- points of sale of bread (IGN street map) ----------
 
-const IGN_PLAN =
+export const IGN_PLAN =
   'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2' +
   '&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png';
 export const KIND_COLOURS = { bakery: '#FF0000', pastry: '#E08A5A', bake_off: '#1E3F8A', retail: '#8A8172' };
 
-const monthYear = (ym) => new Date(`${ym}-01T12:00:00`).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+export const monthYear = (ym) => new Date(`${ym}-01T12:00:00`).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
 /** Alim'Confiance publishes a result for one year: one older than that (data built a while ago) is not shown. */
 export function hygiene(b) {
@@ -430,17 +430,18 @@ export function hygiene(b) {
   return new Date(`${b.hyg_date}-28`) >= limit ? { level: b.hyg, date: monthYear(b.hyg_date) } : null;
 }
 
-const hygieneText = (h) => `${tr('page.hyg', { level: t[`page.hyg.${h.level}`] })} (${tr('page.hyg.on', { date: h.date })})`;
+export const hygieneText = (h) => `${tr('page.hyg', { level: t[`page.hyg.${h.level}`] })} (${tr('page.hyg.on', { date: h.date })})`;
 
 /** One point of sale in the list; i = its index in p.bread_points, shared with its marker on the map. */
-function breadRow(b, i) {
+function breadRow(b, i, base) {
   const since = b.year ? ` · ${tr('page.bread.since', { year: b.year })}` : '';
   const h = hygiene(b);
   const hyg = h ? `<small class="pg-hyg is-${h.level}"><i aria-hidden="true">${'●'.repeat(5 - h.level)}${'○'.repeat(h.level - 1)}</i> ${hygieneText(h)}</small>` : '';
   return `<li><button type="button" class="pg-point" data-i="${i}" aria-pressed="false">
     <span class="pg-dot" style="background:${KIND_COLOURS[b.kind]}"></span>
     <span>${b.name ? esc(b.name) : `<i>${t['page.bread.noName']}</i>`} <small>${t[`page.bread.${b.kind}`]}${since}</small>${hyg}</span>
-    <b>${b.km.toFixed(1).replace('.', ',')} km</b></button></li>`;
+    <b>${b.km.toFixed(1).replace('.', ',')} km</b></button>${
+    b.id ? `<a class="pg-point-page" href="${base}${bakerySlug(b)}" aria-label="${esc(tr('bakery.open', { name: b.name || t[`page.bread.${b.kind}`] }))}">→</a>` : ''}</li>`;
 }
 
 /** Tap water hardness of the commune (median of the networks serving it). */
@@ -459,7 +460,7 @@ export function waterScale(th) {
 }
 
 /** Tap water block: hardness of the commune, the networks serving it, and where it sits on the scale. */
-function water(p) {
+export function water(p) {
   const w = p.water;
   if (!w) return `<p class="pg-muted">${t['page.water.none']}</p>`;
   const dec = (x) => x.toFixed(1).replace('.', ',');
@@ -475,6 +476,7 @@ function water(p) {
 
 /** Points of sale in the commune first, then the others within 5 km; nearest first in each group. */
 function breadList(p) {
+  const base = communePath(p.dep_name, p.name, p.code);
   if (!p.bread_points.length) return `<p class="pg-muted">${t['page.bread.none']}</p>`;
   const all = p.bread_points.map((b, i) => [b, i]);
   const here = all.filter(([b]) => b.here);
@@ -482,7 +484,7 @@ function breadList(p) {
   const checked = p.bread_points.filter(hygiene).length;
   const count = `<p class="pg-muted small pg-hyg-count">${checked ? tr('page.hyg.count', { n: fmtInt(checked), total: fmtInt(p.bread_points.length) }) : t['page.hyg.countNone']}.</p>`;
   const group = (title, list, empty) => `<h3 class="pg-points-title">${title} <span>${fmtInt(list.length)}</span></h3>
-    ${list.length ? `<ul class="pg-points">${list.map(([b, i]) => breadRow(b, i)).join('')}</ul>` : `<p class="pg-muted small">${empty}</p>`}`;
+    ${list.length ? `<ul class="pg-points">${list.map(([b, i]) => breadRow(b, i, base)).join('')}</ul>` : `<p class="pg-muted small">${empty}</p>`}`;
   return `${count}<div class="pg-points-wrap">${group(t['page.bread.here'], here, t['page.bread.hereNone'])}${
     around.length ? group(t['page.bread.around'], around, '') : ''}</div>`;
 }
@@ -539,7 +541,8 @@ export function breadMap(el, p, { print = false, ...mapOptions } = {}) {
     el.style.background = KIND_COLOURS[b.kind];
     el.setAttribute('aria-label', `${b.name || t['page.bread.noName']}, ${t[`page.bread.${b.kind}`]}`);
     const popup = new maplibregl.Popup({ offset: 12, closeButton: false }).setHTML(
-      `<b>${b.name ? esc(b.name) : t['page.bread.noName']}</b><br>${t[`page.bread.${b.kind}`]}${b.year ? ` · ${tr('page.bread.since', { year: b.year })}` : ''} · ${b.km.toFixed(1).replace('.', ',')} km${hygiene(b) ? `<br>${hygieneText(hygiene(b))}` : ''}`,
+      `<b>${b.name ? esc(b.name) : t['page.bread.noName']}</b><br>${t[`page.bread.${b.kind}`]}${b.year ? ` · ${tr('page.bread.since', { year: b.year })}` : ''} · ${b.km.toFixed(1).replace('.', ',')} km${hygiene(b) ? `<br>${hygieneText(hygiene(b))}` : ''}${
+        b.id && !print ? `<br><a href="${communePath(p.dep_name, p.name, p.code)}${bakerySlug(b)}">${t['bakery.see']} →</a>` : ''}`,
     );
     markers.push(new maplibregl.Marker({ element: el }).setLngLat([b.lon, b.lat]).setPopup(popup).addTo(map));
   }

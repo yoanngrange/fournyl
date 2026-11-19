@@ -4,6 +4,7 @@ Main employers are companies or public bodies only (never a sole trader, whose n
 and only establishments that agreed to public release in SIRENE.
 """
 
+import hashlib
 import re
 
 import pandas as pd
@@ -27,6 +28,11 @@ SIZE_LABELS = {
 }
 TOP_EMPLOYERS = 3
 SOLE_TRADER = "1000"  # categorieJuridiqueUniteLegale of an entrepreneur individuel
+
+
+def legal_codes(col: pd.Series) -> pd.Series:
+    """Legal form codes as text ("1000"): the Parquet stock stores them as integers, the SIRENE docs as text."""
+    return col.astype("Int64").astype(str)
 
 
 def businesses_by_size(codes: set[str]) -> tuple[pd.DataFrame, dict]:
@@ -62,6 +68,7 @@ def businesses_by_size(codes: set[str]) -> tuple[pd.DataFrame, dict]:
         filters=pc.field("siren").isin(big.siren.unique().tolist()),
     ).to_pandas()
     ul.columns = ["siren", "company", "acronym", "legal_form", "ul_public"]
+    ul["legal_form"] = legal_codes(ul.legal_form)  # a sole trader is a person: never listed as an employer
     big = big.merge(ul, on="siren", how="left")
     big = big[(big.legal_form != SOLE_TRADER) & (big.ul_public == "O")]
     big["name"] = big.usual_name.fillna(big.sign).fillna(big.company).fillna(big.acronym)
@@ -162,6 +169,12 @@ def politics(codes: set[str]) -> dict:
 BREAD_KINDS = {"10.71C": "bakery", "10.71D": "pastry", "10.71B": "bake_off", "47.24Z": "retail"}
 BREAD_RADIUS_M = 5_000
 BREAD_MAX_POINTS = 300  # nearest first: big cities would otherwise list thousands
+PAGE_KINDS = {"10.71C", "10.71D"}  # points of sale that have their own page (pipeline/build_bakeries.py)
+
+
+def bakery_id(siret: str) -> str:
+    """Stable id of an establishment in URLs and data, so the SIRET itself is never published."""
+    return hashlib.sha1(f"fournyl:{siret}".encode()).hexdigest()[:10]
 
 
 def hygiene() -> pd.DataFrame:
@@ -221,6 +234,7 @@ def bread_points(centres: pd.DataFrame) -> dict:
         filters=pc.field("siren").isin(t.siren.unique().tolist()),
     ).to_pandas()
     ul.columns = ["siren", "company", "legal_form", "ul_public"]
+    ul["legal_form"] = legal_codes(ul.legal_form)
     t = t.merge(ul, on="siren", how="left")
     company = t.company.where((t.legal_form != SOLE_TRADER) & (t.ul_public == "O"))
     t["name"] = t.usual_name.fillna(t.sign).fillna(company)
@@ -233,7 +247,8 @@ def bread_points(centres: pd.DataFrame) -> dict:
     mapping = cog.code_mapping()  # arrondissements and merged communes -> current commune
     t["home"] = t.commune.map(lambda c: mapping.get(c, c) if isinstance(c, str) else None)
 
-    pts = gpd.GeoDataFrame(t[["name", "kind", "year", "home", "level", "date"]], geometry=gpd.points_from_xy(t.x, t.y), crs=2154)
+    t["page"] = [bakery_id(s) if n in PAGE_KINDS else None for s, n in zip(t.siret, t.naf)]
+    pts = gpd.GeoDataFrame(t[["name", "kind", "year", "home", "level", "date", "page"]], geometry=gpd.points_from_xy(t.x, t.y), crs=2154)
     ll = pts.to_crs(4326)
     pts["lat"] = ll.geometry.y.round(5)
     pts["lon"] = ll.geometry.x.round(5)
@@ -257,6 +272,7 @@ def bread_points(centres: pd.DataFrame) -> dict:
                 "here": r.home == code,
                 "hyg": int(r.level) if pd.notna(r.level) else None,
                 "hyg_date": r.date if isinstance(r.date, str) else None,
+                "id": r.page,  # its own page, for bakeries and pastry shops
             }
             for r in g.head(BREAD_MAX_POINTS).itertuples()
         ]

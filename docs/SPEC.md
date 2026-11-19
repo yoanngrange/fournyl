@@ -125,12 +125,25 @@ must exist as a file. One build command generates all ~35k pages (≈ 10 kB each
 1 GB Pages limit); it runs the same way locally and in the GitHub Action. The pages are deployed as the
 Pages artifact and **never committed** to git (a monthly refresh would otherwise add ~35k files to history).
 
+### 3.7 Bakery page (Nov 2026, route `/<département>/<commune>-<code>/<nom>-<id>/`)
+One page per active bakery and pastry shop of SIRENE (10.71C, 10.71D) released publicly; `id` = 10 hex characters
+derived from the SIRET (`bakery_id`), stable across builds. Rendered by `src/boulangerie.js` from
+`data/bakery/<commune>.json`; a static shell per page carries the SEO tags and, for companies, schema.org `Bakery`.
+Blocks: header (name, kind, address, the commune's score) · **La boutique** (current operator since, legal form,
+staff bracket and year, company created, network size, seat or secondary; hygiene; IGN map with the shop and its
+competitors) · **Comptes publiés** (last revenue and net income filed as public, with the closing month; otherwise
+"non publiés") · **Concurrence à moins de 2 km** (8 nearest points of sale, linked to their pages, list and map
+linked) · **La commune** (score, inhabitants, per bakery, growth, income, bakeries, département business price,
+link to the commune page) · **Qualité de l'eau du robinet**. The commune page links each bakery and pastry shop
+(list arrow and map popup). Sole traders: see CLAUDE.md (no name, no company figures, `noindex`).
+
 ### 3.6 URLs (decided Oct 25, 2026)
 | Page | URL |
 |---|---|
 | France (map) | `/` |
 | Département (map centred on it) | `/loire-atlantique/` |
 | Commune page | `/loire-atlantique/clisson-44043/` |
+| Bakery page | `/loire-atlantique/clisson-44043/frangins-a15fb72f9c/` |
 | Help: method, sources and updates, terms, legal notice, privacy (Nov 2026) | `/aide/` (anchors `#methode`, `#sources`, `#conditions`, `#mentions`, `#confidentialite`, one per explanation, e.g. `#eau`) |
 | Basket (market study export) | `/panier/` |
 `/sources/` and `/infos-legales/` (until Nov 2026) are small redirect pages to `/aide/`.

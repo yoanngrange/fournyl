@@ -659,6 +659,22 @@ body.page { height: auto; background: var(--paper); overflow-x: clip; }
 .cmp-table .pg-scale-seg span { font-family: var(--font-ui); font-size: 9px; }
 .pg-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .bread-pin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #FFFFFF; box-shadow: 0 0 0 1px var(--ink); cursor: pointer; padding: 0; }
+/* Bakery page */
+.bk-shop { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.bk-map-wrap { margin: 0; }
+.bk-map { height: 380px; border: var(--line); }
+.bk-map-wrap .pg-legend { margin-top: 8px; }
+.pg-legend i.is-here { width: 14px; height: 14px; border: 2px solid var(--paper-2); box-shadow: 0 0 0 2px var(--ink); background: var(--rouge); }
+.bread-pin.is-here { cursor: default; }
+.pg-hyg-big { font-size: 15px; margin: 4px 0 0; }
+.pg-hyg-big i { font-style: normal; letter-spacing: 1px; }
+.pg-hyg-big.is-3, .pg-hyg-big.is-4 { font-weight: 700; }
+/* Link from a list row to the shop's own page, beside the row button. */
+.pg-points li:has(.pg-point-page) { display: grid; grid-template-columns: minmax(0, 1fr) 36px; align-items: center; }
+.pg-point-page { display: grid; place-items: center; height: 100%; min-height: 36px; font-weight: 700; text-decoration: none; color: var(--ink); }
+.pg-point-page:hover { background: var(--ink); color: var(--paper-2); }
+@media (max-width: 900px) { .bk-shop { grid-template-columns: minmax(0, 1fr); } .bk-map { height: 300px; } }
+@media (max-width: 520px) { .pg-tile-v.is-text, .kpi-v.is-text { font-size: 13px; } }
 /* The picked shop on the map: larger, with a thick ink ring, above the others. */
 .bread-pin.is-active { width: 26px; height: 26px; border-width: 3px; box-shadow: 0 0 0 3px var(--ink); z-index: 2; }
 .bread-pin:focus-visible { outline: 3px solid var(--bleu); outline-offset: 2px; }

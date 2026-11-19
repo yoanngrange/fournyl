@@ -218,6 +218,16 @@ SOURCES = {
         "licence": "Licence Ouverte 2.0",
         "page": "https://alimconfiance.agriculture.gouv.fr/",
     },
+    "ratios_inpi": {
+        "name": "Ratios financiers (comptes annuels déposés au RNCS)",
+        "producer": "INPI, ministères économiques et financiers",
+        "vintage": "comptes publiés",
+        "url": "https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/ratios_inpi_bce/exports/parquet"
+        "?select=siren,date_cloture_exercice,chiffre_d_affaires,resultat_net,confidentiality",
+        "suffix": ".parquet",
+        "licence": "Licence Ouverte 2.0",
+        "page": "https://www.data.gouv.fr/datasets/ratios-financiers-bce-inpi",
+    },
     "sirene": {
         "name": "Base Sirene des établissements",
         "producer": "Insee",
@@ -298,3 +308,8 @@ def in_scope(dep_code: str) -> bool:
 WATER_PARAM = "TH"  # titre hydrotimétrique, in degrés français (°f)
 # Hardness classes in °f (upper bounds), the scale used by water utilities and the CIEau.
 WATER_CLASSES = [(7, "very_soft"), (15, "soft"), (25, "medium"), (35, "hard"), (float("inf"), "very_hard")]
+
+# --- One page per bakery (SIRENE 10.71C and 10.71D) ---
+BAKERY_PAGE_KINDS = {"10.71C": "bakery", "10.71D": "pastry"}
+BAKERY_NEAR_M = 2_000  # competitors listed on a bakery page: other points of sale of bread within this distance
+BAKERY_NEAR_MAX = 8

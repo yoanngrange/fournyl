@@ -178,8 +178,25 @@ def commune_page(
     }
 
 
+def bakery_page_path(b: dict, home: str, df: pd.DataFrame, dep_names: dict) -> str | None:
+    """Site path of a bakery page (mirror of bakeryPath in src/lib/slug.js), or None if its commune is unknown."""
+    from pipeline.pages import commune_path, slugify
+
+    if home not in df.index or not b.get("id"):
+        return None
+    name = b.get("name") or ("patisserie" if b.get("kind") == "pastry" else "boulangerie")
+    row = df.loc[home]
+    return commune_path(dep_names.get(row["dep"], ""), row["name"], home) + f"{slugify(name)}-{b['id']}/"
+
+
+def _with_paths(b: dict, df: pd.DataFrame, dep_names: dict) -> dict:
+    """Competitors carry the path of their own page (they may sit in a neighbouring commune)."""
+    near = [{**{k: v for k, v in n.items() if k not in ("id", "home")}, "path": bakery_page_path(n, n.get("home"), df, dep_names)} for n in b["near"]]
+    return {**b, "near": near}
+
+
 def write_all(
-    df, centres, raw, pct, display_geom, deps_gdf, adjacency, income_ref, fonds, employers, politics, bread, water, wiki,
+    df, centres, raw, pct, display_geom, deps_gdf, adjacency, income_ref, fonds, employers, politics, bread, water, shops, wiki,
     manifest, deps, checks,
 ):
     """Replace public/data with the outputs for the given départements."""
@@ -211,3 +228,6 @@ def write_all(
             code, row, df, centres, dep_names, income_ref, raw, pct, adjacency.get(code, []), employers, politics, bread, water, wiki
         )
         _write(OUT / "commune" / f"{code}.json", page)
+        # One file per commune with its bakeries and pastry shops (their own pages), only when it has some.
+        if shops.get(code):
+            _write(OUT / "bakery" / f"{code}.json", [_with_paths(b, df, dep_names) for b in shops[code]])

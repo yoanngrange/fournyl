@@ -47,6 +47,9 @@ Explain trade-offs briefly when you deviate from this file.
 - The "bakeries likely to sell soon" signal uses company directors' birth years (RNE).
   **Only aggregated counts per commune are ever stored in `public/data` or shown.**
   Never output an individual business with an age or a "likely to sell" flag.
+- **Bakery pages** (one per bakery / pastry shop, Nov 2026) show public SIRENE facts about the shop. The SIRET
+  never leaves the pipeline (pages use `bakery_id`). A sole trader (entreprise individuelle) is a person: never
+  named (shop sign only), no company figures, page `noindex` and out of the sitemaps. Nothing about directors.
 - Any future lead sharing (brokers, millers) requires explicit opt-in from the user.
 
 ## Definition of done for any task

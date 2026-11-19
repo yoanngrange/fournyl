@@ -22,6 +22,8 @@ from urllib.parse import urlparse
 from pipeline.config import ANALYTICS_TOKEN, OUT, ROOT, SITE_URL
 
 TEMPLATE = Path(__file__).parent / "templates" / "commune.html"
+BAKERY_TEMPLATE = Path(__file__).parent / "templates" / "bakery.html"
+SITEMAP_MAX = 40_000  # URLs per sitemap file (the protocol allows 50,000)
 FR = ROOT / "src" / "i18n" / "fr.js"
 
 
@@ -39,6 +41,12 @@ def dep_path(dep_name: str) -> str:
 
 def commune_path(dep_name: str, name: str, code: str) -> str:
     return f"{slugify(dep_name)}/{slugify(name)}-{code.lower()}/"
+
+
+def bakery_slug(b: dict) -> str:
+    """Mirror of bakerySlug in src/lib/slug.js: 'frangins-a15fb72f9c/' (a shop without a known name: its kind)."""
+    name = b.get("name") or ("patisserie" if b.get("kind") == "pastry" else "boulangerie")
+    return f"{slugify(name)}-{b['id']}/"
 
 
 def strings() -> dict:
@@ -139,6 +147,8 @@ class Site:
         self.built_at = json.loads((data_dir / "meta.json").read_text()).get("built_at", "")
         self.root_path = urlparse(SITE_URL).path  # "/fournyl/"
         self.template = TEMPLATE.read_text(encoding="utf-8")
+        self.bakery_template = BAKERY_TEMPLATE.read_text(encoding="utf-8")
+        self._shops: dict[str, list] = {}
         self.index_html = (ROOT / "public" / "index.html").read_text(encoding="utf-8")
 
     # --- pages ---
@@ -182,6 +192,52 @@ class Site:
             r"\{\{(\w+)\}\}",
             lambda m: raw[m.group(1)] if m.group(1) in raw else html.escape(str(params[m.group(1)]), quote=True),
             self.template,
+        )
+
+    def shops(self, code: str) -> list[dict]:
+        """Bakeries and pastry shops of a commune (data/bakery/<code>.json), cached."""
+        if code not in self._shops:
+            f = self.data / "bakery" / f"{code}.json"
+            self._shops[code] = json.loads(f.read_text()) if f.exists() else []
+        return self._shops[code]
+
+    def bakery_path(self, code: str, b: dict) -> str:
+        c = self.communes[code]
+        return commune_path(self.dep_names[c["dep"]], c["name"], code) + bakery_slug(b)
+
+    def bakery_page(self, code: str, b: dict) -> str:
+        """One bakery: static shell with its SEO tags; src/boulangerie.js renders the page from the data."""
+        c = self.communes[code]
+        t = self.t
+        dep_name = self.dep_names[c["dep"]]
+        kind = t["page.bread.pastry"] if b["kind"] == "pastry" else t["page.bread.bakery"]
+        name = b["name"] or f"{kind} · {b['address']}"
+        since = b["created"][:4] if b.get("created") else "?"
+        title = _fill(t["seo.bakery.title"], name=name, kind=kind.lower(), commune=c["name"], cp=b.get("cp") or c["cp"])
+        description = _fill(t["seo.bakery.description"], kind=kind, address=b["address"], cp=b.get("cp") or c["cp"], commune=c["name"], since=since)
+        canonical = SITE_URL + self.bakery_path(code, b)
+        cpath = commune_path(dep_name, c["name"], code)
+        params = {
+            "base": "../../../", "title": title, "description": description, "canonical": canonical, "code": code, "id": b["id"],
+            "name": name, "commune": c["name"], "commune_path": cpath, "dep_name": dep_name, "dep_path": dep_path(dep_name),
+            "t_france": t["map.france"], "t_breadcrumb": t["map.breadcrumb"],
+        }
+        seo = self.social(title, description, canonical) + "\n  " + json_ld(breadcrumb([
+            ("France", SITE_URL), (dep_name, SITE_URL + dep_path(dep_name)), (c["name"], SITE_URL + cpath), (name, canonical),
+        ]))
+        if b.get("indexed"):  # a company's shop: structured data for search engines
+            seo += "\n  " + json_ld({
+                "@context": "https://schema.org", "@type": "Bakery", "name": name, "url": canonical,
+                "address": {"@type": "PostalAddress", "streetAddress": b["address"], "postalCode": b.get("cp"), "addressLocality": c["name"], "addressCountry": "FR"},
+                "geo": {"@type": "GeoCoordinates", "latitude": b["lat"], "longitude": b["lon"]},
+            })
+        # A sole trader is a person: the page exists for users of the site but is not offered to search engines.
+        robots = "" if b.get("indexed") else '<meta name="robots" content="noindex">'
+        raw = {"footer": self.footer(), "analytics": analytics_tag(), "seo": seo, "robots": robots}
+        return re.sub(
+            r"\{\{(\w+)\}\}",
+            lambda m: raw[m.group(1)] if m.group(1) in raw else html.escape(str(params[m.group(1)]), quote=True),
+            self.bakery_template,
         )
 
     def social(self, title: str, description: str, url: str) -> str:
@@ -300,6 +356,17 @@ class Site:
 </html>
 """
 
+    def bakery_sitemaps(self) -> list[str]:
+        """Pages of companies' shops (sole traders' pages are not indexed), in files of SITEMAP_MAX URLs."""
+        urls = [SITE_URL + self.bakery_path(code, b) for code in sorted(self.communes) for b in self.shops(code) if b.get("indexed")]
+        return [self._urlset(urls[i:i + SITEMAP_MAX]) for i in range(0, len(urls), SITEMAP_MAX)]
+
+    def _urlset(self, urls: list[str]) -> str:
+        day = self.built_at[:10]
+        lastmod = f"<lastmod>{day}</lastmod>" if day else ""
+        body = "\n".join(f"  <url><loc>{html.escape(u)}</loc>{lastmod}</url>" for u in urls)
+        return f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{body}\n</urlset>\n'
+
     def sitemap(self) -> str:
         urls = [SITE_URL, SITE_URL + "aide/"]
         urls += [SITE_URL + dep_path(self.dep_names[d]) for d in sorted(self.exported)]
@@ -353,6 +420,13 @@ published by the association Vraie Forêt (Nantes, France).
         deps_by_slug = {slugify(n): d for d, n in self.dep_names.items() if d in self.exported}
         if len(parts) == 1 and parts[0] in deps_by_slug:
             return self.dep_page(deps_by_slug[parts[0]])
+        if len(parts) == 3:
+            code = parts[1].rsplit("-", 1)[-1].upper()
+            bid = parts[2].rsplit("-", 1)[-1]
+            for b in self.shops(code) if code in self.communes else []:
+                if b["id"] == bid and path.strip("/") == self.bakery_path(code, b).strip("/"):
+                    return self.bakery_page(code, b)
+            return None
         if len(parts) == 2:
             code = parts[1].rsplit("-", 1)[-1].upper()
             if code in self.communes and path.strip("/") == commune_path(
@@ -371,6 +445,9 @@ published by the association Vraie Forêt (Nantes, France).
         for code, c in self.communes.items():
             _put(site / commune_path(self.dep_names[c["dep"]], c["name"], code) / "index.html", self.commune_page(code))
             n += 1
+            for b in self.shops(code):
+                _put(site / self.bakery_path(code, b) / "index.html", self.bakery_page(code, b))
+                n += 1
         for rel in STATIC_PAGES:
             f = site / rel
             if f.exists():
@@ -383,7 +460,11 @@ published by the association Vraie Forêt (Nantes, France).
                 f.write_text(page, encoding="utf-8")
         _put(site / "404.html", self.not_found_page())
         _put(site / "sitemap.xml", self.sitemap())
-        _put(site / "robots.txt", f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}sitemap.xml\n")
+        maps = ["sitemap.xml"]
+        for i, chunk in enumerate(self.bakery_sitemaps(), start=1):
+            maps.append(f"sitemap-boulangeries-{i}.xml")
+            _put(site / maps[-1], chunk)
+        _put(site / "robots.txt", "User-agent: *\nAllow: /\n\n" + "".join(f"Sitemap: {SITE_URL}{m}\n" for m in maps))
         _put(site / "llms.txt", self.llms_txt())
         return n
 
