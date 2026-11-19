@@ -1,6 +1,7 @@
 // All UI strings (French). Keys are grouped by screen; keep an English twin possible.
 export default {
   'app.name': 'Fournyl',
+  'app.tagline': ' – étude de marché pour créer ou reprendre une boulangerie',
   'app.home': 'Fournyl, accueil',
   'app.loading': 'Chargement des données…',
   'app.loadError': 'Les données n’ont pas pu être chargées. Réessayez dans un instant.',
@@ -314,11 +315,11 @@ export default {
   'sector.other': 'Autres',
 
   // Generated pages (pipeline/pages.py reads these single-line entries; keep each on one line).
-  'seo.home.title': 'Étude de marché boulangerie – Créer ou reprendre une boulangerie en France | Fournyl',
-  'seo.home.description': 'Étude de marché gratuite pour créer ou reprendre une boulangerie : les {n} communes de France notées sur 100 (habitants par boulangerie, revenus, démographie, concurrence), à partir des données publiques.',
-  'seo.dep.title': 'Étude de marché – Création ou reprise de boulangerie – {dep} ({code}) | Fournyl',
-  'seo.dep.description': 'Créer ou reprendre une boulangerie en {dep} ({code}) : les {n} communes notées sur 100 (habitants par boulangerie, revenus, démographie, concurrence). Étude de marché gratuite à partir des données publiques.',
-  'seo.commune.title': 'Créer une boulangerie {at} ({cp}) – Reprendre une boulangerie – Étude de marché',
+  'seo.home.title': 'Étude de marché boulangerie : créer ou reprendre | Fournyl',
+  'seo.home.description': 'Où créer ou reprendre une boulangerie ? Les {n} communes de France notées sur 100 à partir des données publiques. Étude de marché gratuite.',
+  'seo.dep.title': 'Créer ou reprendre une boulangerie – {dep} ({code}) | Fournyl',
+  'seo.dep.description': 'Créer ou reprendre une boulangerie en {dep} ({code}) : {n} communes notées sur 100, concurrence, revenus, démographie. Étude de marché gratuite.',
+  'seo.commune.title': 'Créer ou reprendre une boulangerie {at} ({cp}) – Étude de marché',
   'seo.commune.description': 'Créer ou reprendre une boulangerie {at} ({dep}) : {pop} habitants, {bakeries}, revenu médian {income}, note {score}. Concurrence, reprises, prix des fonds, démographie et économie locale.',
   'seo.score.none': 'non calculée',
   'seo.places.deps': 'Tous les départements',
@@ -537,9 +538,9 @@ export default {
   'bakery.risks.kind.quake': 'Séismes',
   'bakery.risks.kind.other': 'Autres',
   'seo.bakery.title': '{label} – {commune} – Création ou reprise de boulangerie – Étude de marché – Fournyl',
-  'seo.bakery.description': '{label}, {address}, {cp} {commune} : {facts}. Étude de marché pour créer ou reprendre une boulangerie à {commune}.',
+  'seo.bakery.description': '{label}, {address}, {commune} : {facts}. Étude de marché création ou reprise.',
   'seo.bakery.since': 'exploitant actuel depuis {year}',
-  'seo.bakery.hygiene': 'hygiène {level} ({date})',
+  'seo.bakery.hygiene': 'hygiène {level}',
   'seo.bakery.near': '{n} concurrents à moins de 2 km',
   'seo.bakery.nearOne': '1 concurrent à moins de 2 km',
   'seo.bakery.nearNone': 'aucun concurrent à moins de 2 km',

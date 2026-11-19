@@ -81,3 +81,8 @@ One-time, by Yoann (needs his Google / Microsoft accounts):
 is about 0.75 GB (35k commune pages, ~42k bakery pages, their data). Full static rendering of every page (no
 JavaScript) would exceed 2 GB: postponed until the site pays for a host without that limit (Yoann, Nov 19, 2026).
 Pages carry a static summary (key figures, links) for search engines instead.
+
+## IndexNow (Bing and others)
+After each deploy, `scripts/indexnow.py` submits every URL of the live sitemaps to IndexNow (Bing, Yandex, Seznam,
+Naver), 10,000 per request. The key is `INDEXNOW_KEY` in `pipeline/config.py`, served at `/<key>.txt` from `public/`.
+A failure is printed and never fails the deploy. Google does not use IndexNow (it reads `sitemap.xml`).

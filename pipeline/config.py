@@ -12,6 +12,8 @@ OUT = ROOT / "public" / "data"
 
 # Public address of the site (canonical URLs, sitemap, 404 base). CI may override it.
 SITE_URL = os.environ.get("SITE_URL", "https://fournyl.com/")
+# IndexNow (Bing, Yandex, Seznam…): public key, also served as public/<key>.txt; see scripts/indexnow.py.
+INDEXNOW_KEY = "9fba06de209946a5ba22f40105dec720"
 
 # Cloudflare Web Analytics (cookieless). Empty: no analytics script on the pages (local builds, forks).
 ANALYTICS_TOKEN = os.environ.get("CF_BEACON_TOKEN", "")
