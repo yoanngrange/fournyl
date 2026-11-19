@@ -48,7 +48,7 @@ function sources(meta, index) {
   const rows = meta.sources
     .map(
       (s) => `<tr>
-        <td><a href="${esc(s.url)}">${esc(s.name)}</a><br><small>${esc(s.producer)} · ${esc(s.licence)}</small></td>
+        <th scope="row"><a href="${esc(s.url)}">${esc(s.name)}</a><br><small>${esc(s.producer)} · ${esc(s.licence)}</small></th>
         <td>${esc(s.vintage)}</td>
         <td class="num">${s.published ? longDate(s.published) : t['updates.unknown']}</td>
         <td class="num">${longDate(s.fetched)}</td>
@@ -76,7 +76,7 @@ function sources(meta, index) {
       {
         id: 'liste',
         title: t['sources.list.title'],
-        html: `<div class="table-wrap"><table>
+        html: `<div class="table-wrap"><table class="stack-rows" style="--cols:4">
             <thead><tr>${['source', 'vintage', 'published', 'fetched', 'rhythm'].map((k) => `<th scope="col">${t[`updates.col.${k}`]}</th>`).join('')}</tr></thead>
             <tbody>${rows}</tbody>
           </table></div>

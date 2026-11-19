@@ -139,6 +139,11 @@ by a test). The INSEE code is what the site reads; a wrong or old slug, or `/com
 département at the centre of the map. Pages are generated at build time (`scripts/build_site.sh`), with
 `sitemap.xml` and `robots.txt`; never committed.
 
+**Commune page layout (Nov 19, 2026):** blocks in this order, each the full width of the page: Why this score ·
+Demography · Bakeries and competition · Points of sale of bread within 5 km · Local economy · Income and housing ·
+Safety and services · Politics. Inside a block, its parts sit side by side (`.pg-cols`) and stack on narrow screens.
+**Tables:** when a table's box is narrower than 560 px (phones, or a narrow column), each row header gets a line of
+its own and the values share the width below (`.stack-rows`): no sideways scrolling.
 **Interface copy (Nov 2026):** no explanatory sentences on screens; a "?" links to `/aide/`.
 **Ranking:** France view, top 5 départements by number of favourable communes passing the filters; département
 view, top 5 communes on screen passing the filters. Not shown on phones.
