@@ -29,6 +29,11 @@ TOP_EMPLOYERS = 3
 SOLE_TRADER = "1000"  # categorieJuridiqueUniteLegale of an entrepreneur individuel
 
 
+def legal_codes(col: pd.Series) -> pd.Series:
+    """Legal form codes as text ("1000"): the Parquet stock stores them as integers, the SIRENE docs as text."""
+    return col.astype("Int64").astype(str)
+
+
 def businesses_by_size(codes: set[str]) -> tuple[pd.DataFrame, dict]:
     """Active establishments per size group, and the largest employers (10+ employees) per commune."""
     t = pq.read_table(
@@ -62,6 +67,7 @@ def businesses_by_size(codes: set[str]) -> tuple[pd.DataFrame, dict]:
         filters=pc.field("siren").isin(big.siren.unique().tolist()),
     ).to_pandas()
     ul.columns = ["siren", "company", "acronym", "legal_form", "ul_public"]
+    ul["legal_form"] = legal_codes(ul.legal_form)  # a sole trader is a person: never listed as an employer
     big = big.merge(ul, on="siren", how="left")
     big = big[(big.legal_form != SOLE_TRADER) & (big.ul_public == "O")]
     big["name"] = big.usual_name.fillna(big.sign).fillna(big.company).fillna(big.acronym)
@@ -221,6 +227,7 @@ def bread_points(centres: pd.DataFrame) -> dict:
         filters=pc.field("siren").isin(t.siren.unique().tolist()),
     ).to_pandas()
     ul.columns = ["siren", "company", "legal_form", "ul_public"]
+    ul["legal_form"] = legal_codes(ul.legal_form)
     t = t.merge(ul, on="siren", how="left")
     company = t.company.where((t.legal_form != SOLE_TRADER) & (t.ul_public == "O"))
     t["name"] = t.usual_name.fillna(t.sign).fillna(company)
