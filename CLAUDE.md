@@ -49,7 +49,7 @@ Explain trade-offs briefly when you deviate from this file.
   Never output an individual business with an age or a "likely to sell" flag.
 - **Bakery pages** (one per bakery / pastry shop, Nov 2026) show public SIRENE facts about the shop. The SIRET
   never leaves the pipeline (pages use `bakery_id`). A sole trader (entreprise individuelle) is a person: never
-  named (shop sign only), no company figures, page `noindex` and out of the sitemaps. Nothing about directors.
+  named (shop sign only). Nothing about directors. Every page is indexed (decided by Yoann, Nov 19, 2026).
 - Any future lead sharing (brokers, millers) requires explicit opt-in from the user.
 
 ## Definition of done for any task

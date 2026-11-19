@@ -225,15 +225,12 @@ class Site:
         seo = self.social(title, description, canonical) + "\n  " + json_ld(breadcrumb([
             ("France", SITE_URL), (dep_name, SITE_URL + dep_path(dep_name)), (c["name"], SITE_URL + cpath), (name, canonical),
         ]))
-        if b.get("indexed"):  # a company's shop: structured data for search engines
-            seo += "\n  " + json_ld({
+        seo += "\n  " + json_ld({
                 "@context": "https://schema.org", "@type": "Bakery", "name": name, "url": canonical,
                 "address": {"@type": "PostalAddress", "streetAddress": b["address"], "postalCode": b.get("cp"), "addressLocality": c["name"], "addressCountry": "FR"},
                 "geo": {"@type": "GeoCoordinates", "latitude": b["lat"], "longitude": b["lon"]},
             })
-        # A sole trader is a person: the page exists for users of the site but is not offered to search engines.
-        robots = "" if b.get("indexed") else '<meta name="robots" content="noindex">'
-        raw = {"footer": self.footer(), "analytics": analytics_tag(), "seo": seo, "robots": robots}
+        raw = {"footer": self.footer(), "analytics": analytics_tag(), "seo": seo}
         return re.sub(
             r"\{\{(\w+)\}\}",
             lambda m: raw[m.group(1)] if m.group(1) in raw else html.escape(str(params[m.group(1)]), quote=True),
@@ -357,8 +354,8 @@ class Site:
 """
 
     def bakery_sitemaps(self) -> list[str]:
-        """Pages of companies' shops (sole traders' pages are not indexed), in files of SITEMAP_MAX URLs."""
-        urls = [SITE_URL + self.bakery_path(code, b) for code in sorted(self.communes) for b in self.shops(code) if b.get("indexed")]
+        """Every bakery page, in files of SITEMAP_MAX URLs."""
+        urls = [SITE_URL + self.bakery_path(code, b) for code in sorted(self.communes) for b in self.shops(code)]
         return [self._urlset(urls[i:i + SITEMAP_MAX]) for i in range(0, len(urls), SITEMAP_MAX)]
 
     def _urlset(self, urls: list[str]) -> str:

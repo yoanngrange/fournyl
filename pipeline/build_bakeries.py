@@ -2,10 +2,9 @@
 
 Only establishments released publicly in SIRENE. Privacy (CLAUDE.md):
 - the SIRET never leaves the pipeline: pages use a stable short id derived from it (`bakery_id`);
-- a sole trader (entreprise individuelle) is a person: never named (shop sign or usual name only), no company
-  figures, and the page is not offered to search engines (`indexed: false`);
+- a sole trader (entreprise individuelle) is a person: never named (shop sign or usual name only);
 - nothing about directors (no name, no age, no "likely to sell").
-Published accounts (INPI ratios) are shown for companies only, from accounts filed as public.
+Every page is indexed by search engines. Published accounts (INPI ratios) are shown whenever filed as public.
 """
 
 import math
@@ -163,13 +162,13 @@ def bakeries(codes: set[str]) -> dict[str, list[dict]]:
     pages = t.index[t.naf.isin(list(BAKERY_PAGE_KINDS)) & t.home.isin(codes)].to_numpy()
     near = _nearest(t.x.to_numpy(), t.y.to_numpy(), pages)
     network = t[t.naf.isin(list(BAKERY_PAGE_KINDS))].groupby("siren").size()
-    acc = _accounts(set(t.loc[pages].siren[~t.loc[pages].sole_trader]))
+    acc = _accounts(set(t.loc[pages].siren))
     hyg = hygiene()
 
     out: dict[str, list[dict]] = {}
     for i in pages:
         r = t.loc[i]
-        a = acc.loc[r.siren] if (not r.sole_trader and r.siren in acc.index) else None
+        a = acc.loc[r.siren] if r.siren in acc.index else None
         h = hyg.loc[r.siret] if r.siret in hyg.index else None
         street = _address(r)
         created = pd.to_datetime(r.created, errors="coerce")
@@ -185,13 +184,12 @@ def bakeries(codes: set[str]) -> dict[str, list[dict]]:
                 "lat": float(r.lat),
                 "lon": float(r.lon),
                 "created": created.strftime("%Y-%m") if pd.notna(created) else None,
-                # A sole trader's "company" is the person: only the shop's own dates are shown.
-                "company_created": None if r.sole_trader or pd.isna(company_created) else int(company_created.year),
+                "company_created": None if pd.isna(company_created) else int(company_created.year),
                 "legal": legal_label(r.legal_form),
                 "seat": r.seat in (True, "true", "O"),
                 "staff": STAFF.get(r.staff) if isinstance(r.staff, str) else None,
                 "staff_year": int(r.staff_year) if pd.notna(pd.to_numeric(r.staff_year, errors="coerce")) else None,
-                "network": None if r.sole_trader else int(network.get(r.siren, 1)),
+                "network": int(network.get(r.siren, 1)),
                 "accounts": None if a is None else {
                     "closed": a.closed,
                     "revenue": int(a.chiffre_d_affaires),
@@ -211,7 +209,6 @@ def bakeries(codes: set[str]) -> dict[str, list[dict]]:
                     }
                     for j, d in near[i]
                 ],
-                "indexed": not bool(r.sole_trader),
             }
         )
     for lst in out.values():

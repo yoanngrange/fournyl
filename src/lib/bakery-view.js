@@ -24,7 +24,7 @@ function facts(b) {
 }
 
 function accounts(b) {
-  if (!b.accounts) return `<p class="pg-muted">${t[b.sole_trader ? 'bakery.accounts.soleTrader' : 'bakery.accounts.none']}</p>`;
+  if (!b.accounts) return `<p class="pg-muted">${t['bakery.accounts.none']}</p>`;
   const closed = tr('bakery.closed', { date: monthYear(b.accounts.closed) });
   return `<dl class="pg-tiles is-2">
     ${tile(t['bakery.revenue'], fmtEuro(b.accounts.revenue), closed)}

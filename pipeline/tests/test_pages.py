@@ -119,9 +119,6 @@ def test_bakery_pages(site):
         pytest.skip("no bakery data")
     page = site.route(site.bakery_path("44043", shops[0]))
     assert page and 'name="fournyl-bakery"' in page and "{{" not in page
-    sole = next((b for code in site.communes for b in site.shops(code) if not b["indexed"]), None)
-    if sole:
-        code = next(c for c in site.communes if sole in site.shops(c))
-        html_ = site.bakery_page(code, sole)
-        assert '<meta name="robots" content="noindex">' in html_ and '"@type":"Bakery"' not in html_
-        assert all(site.bakery_path(code, sole) not in sm for sm in site.bakery_sitemaps())
+    assert '"@type":"Bakery"' in page and "noindex" not in page
+    urls = sum(sm.count("<url>") for sm in site.bakery_sitemaps())
+    assert urls == sum(len(site.shops(code)) for code in site.communes)

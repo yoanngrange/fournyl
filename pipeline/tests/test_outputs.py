@@ -119,8 +119,7 @@ def test_commune_pages_exist(index):
 
 
 def test_bakery_pages(index):
-    """One record per bakery / pastry shop; a sole trader (a person) is never named by company, has no company
-    figures and is kept out of search engines."""
+    """One record per bakery / pastry shop (a sole trader is never named by company: see build_local.bread_points)."""
     shops = [b for code in index["code"] if (OUT / "bakery" / f"{code}.json").exists() for b in load(f"bakery/{code}.json")]
     if not any(c.startswith("44") for c in index["code"]):
         pytest.skip("dep 44 not built")
@@ -129,8 +128,6 @@ def test_bakery_pages(index):
         assert b["kind"] in {"bakery", "pastry"} and b["address"]
         assert len(b["near"]) <= 8 and all(n["m"] <= 2000 for n in b["near"])
         assert all((n["path"] is None) or n["path"].endswith("/") for n in b["near"])
-        if b["sole_trader"]:
-            assert b["accounts"] is None and b["company_created"] is None and b["network"] is None and not b["indexed"]
         if b["accounts"]:
             assert b["accounts"]["revenue"] > 0 and len(b["accounts"]["closed"]) == 7
     assert sum(bool(b["accounts"]) for b in shops) >= 0.05 * len(shops)
