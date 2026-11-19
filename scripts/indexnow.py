@@ -9,6 +9,8 @@ Standard library only (the deploy job has no project environment). The key is in
 import json
 import re
 import sys
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
@@ -33,11 +35,19 @@ def urls() -> list[str]:
     return [u for m in maps for u in re.findall(r"<url><loc>(.*?)</loc>", get(m))]
 
 
-def submit(batch: list[str]) -> int:
+def submit(batch: list[str], tries: int = 4) -> int:
+    """POST one batch. A 403 right after a deploy means IndexNow cannot see the key file yet: wait and retry."""
     body = json.dumps({"host": urlparse(SITE).hostname, "key": KEY, "keyLocation": f"{SITE}{KEY}.txt", "urlList": batch}).encode()
     req = urllib.request.Request(ENDPOINT, data=body, headers={**UA, "Content-Type": "application/json; charset=utf-8"})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return r.status
+    for attempt in range(1, tries + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return r.status
+        except urllib.error.HTTPError as err:
+            if err.code not in (403, 429) or attempt == tries:
+                raise
+            print(f"IndexNow: HTTP {err.code}, retrying in {60 * attempt} s")
+            time.sleep(60 * attempt)
 
 
 def main() -> int:
