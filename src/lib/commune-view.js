@@ -432,13 +432,15 @@ export function hygiene(b) {
 
 const hygieneText = (h) => `${tr('page.hyg', { level: t[`page.hyg.${h.level}`] })} (${tr('page.hyg.on', { date: h.date })})`;
 
-function breadRow(b) {
+/** One point of sale in the list; i = its index in p.bread_points, shared with its marker on the map. */
+function breadRow(b, i) {
   const since = b.year ? ` · ${tr('page.bread.since', { year: b.year })}` : '';
   const h = hygiene(b);
   const hyg = h ? `<small class="pg-hyg is-${h.level}"><i aria-hidden="true">${'●'.repeat(5 - h.level)}${'○'.repeat(h.level - 1)}</i> ${hygieneText(h)}</small>` : '';
-  return `<li><span class="pg-dot" style="background:${KIND_COLOURS[b.kind]}"></span>
+  return `<li><button type="button" class="pg-point" data-i="${i}" aria-pressed="false">
+    <span class="pg-dot" style="background:${KIND_COLOURS[b.kind]}"></span>
     <span>${b.name ? esc(b.name) : `<i>${t['page.bread.noName']}</i>`} <small>${t[`page.bread.${b.kind}`]}${since}</small>${hyg}</span>
-    <b>${b.km.toFixed(1).replace('.', ',')} km</b></li>`;
+    <b>${b.km.toFixed(1).replace('.', ',')} km</b></button></li>`;
 }
 
 /** Tap water hardness of the commune (median of the networks serving it). */
@@ -474,12 +476,13 @@ function water(p) {
 /** Points of sale in the commune first, then the others within 5 km; nearest first in each group. */
 function breadList(p) {
   if (!p.bread_points.length) return `<p class="pg-muted">${t['page.bread.none']}</p>`;
-  const here = p.bread_points.filter((b) => b.here);
-  const around = p.bread_points.filter((b) => !b.here);
+  const all = p.bread_points.map((b, i) => [b, i]);
+  const here = all.filter(([b]) => b.here);
+  const around = all.filter(([b]) => !b.here);
   const checked = p.bread_points.filter(hygiene).length;
   const count = `<p class="pg-muted small pg-hyg-count">${checked ? tr('page.hyg.count', { n: fmtInt(checked), total: fmtInt(p.bread_points.length) }) : t['page.hyg.countNone']}.</p>`;
   const group = (title, list, empty) => `<h3 class="pg-points-title">${title} <span>${fmtInt(list.length)}</span></h3>
-    ${list.length ? `<ul class="pg-points">${list.map(breadRow).join('')}</ul>` : `<p class="pg-muted small">${empty}</p>`}`;
+    ${list.length ? `<ul class="pg-points">${list.map(([b, i]) => breadRow(b, i)).join('')}</ul>` : `<p class="pg-muted small">${empty}</p>`}`;
   return `${count}<div class="pg-points-wrap">${group(t['page.bread.here'], here, t['page.bread.hereNone'])}${
     around.length ? group(t['page.bread.around'], around, '') : ''}</div>`;
 }
@@ -528,10 +531,11 @@ export function breadMap(el, p, { print = false, ...mapOptions } = {}) {
   const townHall = document.createElement('div');
   townHall.className = 'bakehouse-pin';
   const markers = [new maplibregl.Marker({ element: townHall }).setLngLat([p.lon, p.lat]).addTo(map)];
-  for (const b of p.bread_points) {
+  for (const [i, b] of p.bread_points.entries()) {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'bread-pin';
+    el.dataset.i = i;
     el.style.background = KIND_COLOURS[b.kind];
     el.setAttribute('aria-label', `${b.name || t['page.bread.noName']}, ${t[`page.bread.${b.kind}`]}`);
     const popup = new maplibregl.Popup({ offset: 12, closeButton: false }).setHTML(
@@ -540,6 +544,46 @@ export function breadMap(el, p, { print = false, ...mapOptions } = {}) {
     markers.push(new maplibregl.Marker({ element: el }).setLngLat([b.lon, b.lat]).setPopup(popup).addTo(map));
   }
   return { map, markers };
+}
+
+/**
+ * The list and the map point at the same shops: a row picked in the list is highlighted on the map (popup open,
+ * map moved if it is off screen), a marker picked on the map highlights its row and scrolls the list to it
+ * (the list scrolls, not the page).
+ */
+function linkBread(root, made) {
+  if (!made) return;
+  const { map, markers } = made;
+  const pins = new Map(markers.filter((m) => m.getElement().dataset.i != null).map((m) => [m.getElement().dataset.i, m]));
+  const wrap = root.querySelector('.pg-points-wrap');
+  let current = null;
+  const select = (i, from) => {
+    const marker = pins.get(i);
+    const row = root.querySelector(`.pg-point[data-i="${i}"]`);
+    if (current != null && current !== i) {
+      const old = pins.get(current);
+      old?.getElement().classList.remove('is-active');
+      if (old?.getPopup()?.isOpen()) old.togglePopup();
+      root.querySelector(`.pg-point[data-i="${current}"]`)?.setAttribute('aria-pressed', 'false');
+    }
+    current = i;
+    marker?.getElement().classList.add('is-active');
+    row?.setAttribute('aria-pressed', 'true');
+    if (from === 'list' && marker) {
+      if (!map.getBounds().contains(marker.getLngLat())) map.easeTo({ center: marker.getLngLat() });
+      if (!marker.getPopup().isOpen()) marker.togglePopup();
+    }
+    if (from === 'map' && row && wrap) {
+      const title = wrap.querySelector('.pg-points-title')?.offsetHeight ?? 0;
+      const top = wrap.scrollTop + row.getBoundingClientRect().top - wrap.getBoundingClientRect().top - title - 8;
+      wrap.scrollTo({ top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }
+  };
+  root.addEventListener('click', (e) => {
+    const row = e.target.closest('.pg-point');
+    if (row) select(row.dataset.i, 'list');
+  });
+  for (const [i, m] of pins) m.getElement().addEventListener('click', () => select(i, 'map'));
 }
 
 // ---------- photo (Wikimedia Commons) ----------
@@ -715,7 +759,7 @@ export async function wireCommune(root, p, { print = false } = {}) {
   const breadEl = root.querySelector('.pg-bread-map');
   if (!print) {
     locator(locEl, p).catch(() => {});
-    if (breadEl) breadMap(breadEl, p);
+    if (breadEl) linkBread(root, breadMap(breadEl, p));
     root.querySelectorAll('.pg-chart-wrap').forEach(wireChart);
     return;
   }

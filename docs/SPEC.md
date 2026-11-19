@@ -112,6 +112,7 @@ Income & housing (median vs département vs France, poverty rate, second homes, 
 Safety & services (crime vs département vs France, schools, pharmacy, doctors, post office, station; market day "not in open data yet") ·
 Next steps (Pro teasers: bank study, bakeries for sale; opt-in "put me in touch with a broker") · Sources footer.
 
+*Nov 19, 2026 — list and map linked:* picking a shop in the list highlights its marker (larger, ink ring, popup open; the map moves if it is off screen); picking a marker highlights its row (ink edge, tinted) and scrolls the list, not the page, to it.
 *Nov 2026 — points of sale of bread (map + list within 5 km):* each point shows the level of its latest
 official hygiene inspection published on Alim'Confiance (four ministry levels, with the month; four-dot
 pictogram plus text, never colour), and how many of the listed points have one. Above the list, the tap-water
