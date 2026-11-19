@@ -75,3 +75,9 @@ One-time, by Yoann (needs his Google / Microsoft accounts):
 1. Google Search Console > Add property > Domain `fournyl.com`: add the `google-site-verification` TXT record
    at OVH, then Sitemaps > submit `https://fournyl.com/sitemap.xml`.
 2. Bing Webmaster Tools > Import from Google Search Console (also feeds DuckDuckGo, Ecosia, Qwant).
+
+## Site size (GitHub Pages: 1 GB)
+`scripts/build_site.sh` prints the size of `_site/`, warns above 900 MB and fails above 1 GB. In Nov 2026 the site
+is about 0.75 GB (35k commune pages, ~42k bakery pages, their data). Full static rendering of every page (no
+JavaScript) would exceed 2 GB: postponed until the site pays for a host without that limit (Yoann, Nov 19, 2026).
+Pages carry a static summary (key figures, links) for search engines instead.

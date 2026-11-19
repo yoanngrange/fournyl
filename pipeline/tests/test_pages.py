@@ -130,6 +130,9 @@ def test_bakery_pages(site):
     assert 'class="seo-facts"' in page and 'href="loire-atlantique/clisson-44043/"' in page  # content and link to the commune
     commune = site.commune_page("44043")
     assert site.bakery_path("44043", shops[0]) in commune  # the commune page links to its bakeries
+    assert 'class="seo-facts"' in commune and "loire-atlantique/gorges-44064/" in commune  # key figures, nearby communes
+    summary = commune[commune.index('<dl class="seo-facts">'):commune.index("</main>")]
+    assert len(summary.encode()) < 4000  # GitHub Pages: the whole site must stay under 1 GB
     from pipeline.pages import nice_name, shop_label
     assert nice_name("L'AMOUR EST DANS LE BLE") == "L'Amour est dans le Ble"
     assert shop_label({"name": "FRANGINS"}, "Boulangerie") == "Boulangerie Frangins"
