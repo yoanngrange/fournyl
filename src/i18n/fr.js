@@ -283,7 +283,7 @@ export default {
   'page.hyg.4': 'à corriger de manière urgente',
   'page.hyg.count': '{n} sur {total} ont un contrôle d’hygiène publié ces 12 derniers mois',
   'page.hyg.countNone': 'Aucun contrôle d’hygiène publié ces 12 derniers mois',
-  'page.water': 'Eau du robinet',
+  'page.water': 'Qualité de l’eau du robinet',
   'page.water.hardness': 'Dureté (calcaire)',
   'page.water.sub': '{cls} · contrôle sanitaire {year}',
   'page.water.networks': 'Réseaux de distribution',
