@@ -619,7 +619,16 @@ body.page { height: auto; background: var(--paper); overflow-x: clip; }
 .pg-points-title { position: sticky; top: 0; z-index: 1; background: var(--paper-2); margin: 12px 0 0; padding: 6px 0; border-bottom: var(--line); font-size: 13px; font-weight: 700; display: flex; justify-content: space-between; }
 .pg-points-wrap > .pg-points-title:first-child { margin-top: 0; }
 .pg-points-title span { font-family: var(--font-num); }
-.pg-points li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 0; border-bottom: var(--line-soft); font-size: 13px; }
+.pg-points li { border-bottom: var(--line-soft); }
+.pg-point {
+  width: 100%; display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 4px;
+  border: 0; border-left: 4px solid transparent; background: transparent; color: var(--ink); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.pg-point:hover { background: var(--paper-3); }
+.pg-point:focus-visible { outline: 3px solid var(--bleu); outline-offset: -3px; }
+/* The shop picked in the list or on the map: a thick ink edge and a tinted row (not colour alone). */
+.pg-point[aria-pressed="true"] { background: var(--paper-3); border-left-color: var(--ink); }
+.pg-point[aria-pressed="true"] > span:nth-child(2) { font-weight: 700; }
 .pg-points small { color: var(--ink-3); }
 .pg-points b { font-family: var(--font-num); white-space: nowrap; }
 .pg-hyg { display: block; margin-top: 2px; }
@@ -649,6 +658,8 @@ body.page { height: auto; background: var(--paper); overflow-x: clip; }
 .cmp-table .pg-scale-seg span { font-family: var(--font-ui); font-size: 9px; }
 .pg-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .bread-pin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #FFFFFF; box-shadow: 0 0 0 1px var(--ink); cursor: pointer; padding: 0; }
+/* The picked shop on the map: larger, with a thick ink ring, above the others. */
+.bread-pin.is-active { width: 26px; height: 26px; border-width: 3px; box-shadow: 0 0 0 3px var(--ink); z-index: 2; }
 .bread-pin:focus-visible { outline: 3px solid var(--bleu); outline-offset: 2px; }
 .pg-why-title { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .pg-why-score { font-family: var(--font-num); font-size: 22px; font-weight: 700; letter-spacing: 0; text-transform: none; padding: 2px 8px; background: var(--ink); color: var(--paper-2); }
