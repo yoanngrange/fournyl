@@ -442,13 +442,33 @@ function breadRow(b) {
 }
 
 /** Tap water hardness of the commune (median of the networks serving it). */
+/** Hardness classes in °f (pipeline/config.py WATER_CLASSES); the scale stops at 50 °f. */
+const WATER_SCALE = [[0, 7, 'very_soft'], [7, 15, 'soft'], [15, 25, 'medium'], [25, 35, 'hard'], [35, 50, 'very_hard']];
+
+/** The five classes side by side, widths in °f, a marker at the commune's value (position and label, not colour). */
+export function waterScale(th) {
+  const top = WATER_SCALE.at(-1)[1];
+  const segs = WATER_SCALE.map(
+    ([lo, hi, cls]) => `<div class="pg-scale-seg${th != null && th >= lo && (th < hi || hi === top) ? ' is-on' : ''}" style="flex:${hi - lo}">
+      <i></i><span>${t[`page.water.${cls}`]}</span><small>${lo === 0 ? '' : lo}</small></div>`,
+  ).join('');
+  const marker = th == null ? '' : `<b class="pg-scale-mark" style="left:${(100 * Math.min(th, top)) / top}%" aria-hidden="true"></b>`;
+  return `<div class="pg-scale-wrap"><div class="pg-scale" role="img" aria-label="${esc(t['page.water.scale'])}">${marker}${segs}</div></div>`;
+}
+
+/** Tap water block: hardness of the commune, the networks serving it, and where it sits on the scale. */
 function water(p) {
   const w = p.water;
+  if (!w) return `<p class="pg-muted">${t['page.water.none']}</p>`;
   const dec = (x) => x.toFixed(1).replace('.', ',');
-  const label = w ? `${t['page.water']}, ${t[`page.water.${w.class}`]}` : t['page.water'];
-  const value = w ? `${dec(w.th)} °f` : t['page.water.none'];
-  const range = w && w.max - w.min >= 5 ? `<p class="pg-muted small">${tr('page.water.range', { min: dec(w.min), max: dec(w.max) })}</p>` : '';
-  return `<div class="pg-water">${row(label, value)}${range}</div>`;
+  const range = w.max - w.min >= 5 ? `<p class="pg-muted small">${tr('page.water.range', { min: dec(w.min), max: dec(w.max) })}</p>` : '';
+  return cols(
+    `<dl class="pg-tiles is-2">
+      ${tile(t['page.water.hardness'], `${dec(w.th)} °f`, tr('page.water.sub', { cls: t[`page.water.${w.class}`], year: w.year }))}
+      ${tile(t['page.water.networks'], fmtInt(w.networks))}
+    </dl>${range}`,
+    `<h3>${t['page.water.scale']}</h3>${waterScale(w.th)}`,
+  );
 }
 
 /** Points of sale in the commune first, then the others within 5 km; nearest first in each group. */
@@ -618,9 +638,10 @@ export function communeHTML(p, meta, fonds, { idp = '', actions = true, inBasket
       ${section(`${idp}comp`, t['page.competition'], 'boulangeries-comptees', competition(p, fonds, p.dep_name))}
       ${section(`${idp}bread`, t['page.bread'], 'points-de-vente',
         `<div class="pg-bread"><div class="pg-bread-map" id="${idp}bread-map" role="img" aria-label="${esc(t['page.bread'])}"></div>
-          <div>${water(p)}<div class="pg-legend">${Object.entries(KIND_COLOURS).map(([k, c]) => `<span><i style="background:${c}"></i>${t[`page.bread.${k}`]}</span>`).join('')}
+          <div><div class="pg-legend">${Object.entries(KIND_COLOURS).map(([k, c]) => `<span><i style="background:${c}"></i>${t[`page.bread.${k}`]}</span>`).join('')}
             <span><i class="is-pin"></i>${t['page.bread.townHall']}</span></div>${breadList(p)}
           </div></div>`)}
+      ${section(`${idp}water`, t['page.water'], 'eau', water(p))}
       ${section(`${idp}eco`, t['card.economy'], 'employeurs', economy(p))}
       ${section(`${idp}inc`, t['page.incomeHousing'], 'revenu', incomeHousing(p, p.dep_name))}
       ${section(`${idp}safe`, t['page.safetyServices'], 'delinquance', safetyServices(p))}

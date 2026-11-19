@@ -5,7 +5,7 @@
 import t from '../i18n/fr.js';
 import { BIN_COLOURS, CRITERIA, WEIGHTS, bin, category, score } from './scoring.js';
 import { fmtCriterion, fmtEuro, fmtInt, fmtPct, fmtSigned, textClass, tr } from './format.js';
-import { KIND_COLOURS, breadMap, esc, freeze, hygiene, locator } from './commune-view.js';
+import { KIND_COLOURS, breadMap, esc, freeze, hygiene, locator, waterScale } from './commune-view.js';
 
 /** One line style per commune for the population chart: colour and dash, so it never relies on colour alone. */
 const SERIES = [
@@ -187,8 +187,15 @@ function bread(pages) {
     sub(t['basket.cmp.hygiene'], pages.length),
     figures(t['basket.cmp.checked'], pages.map((p) => checked(p).length), (v, i) => tr('basket.cmp.checkedOf', { n: fmtInt(v), total: fmtInt(here(pages[i])) }), { bars: false }),
     cellsRow(t['basket.cmp.worst'], pages.map((p) => (worst(p) ? t[`page.hyg.${worst(p)}`] : '–'))),
-    sub(t['page.water'], pages.length),
-    figures(t['basket.cmp.hardness'], pages.map((p) => p.water?.th ?? null), (v, i) => `${dec1(v)} °f · ${t[`page.water.${pages[i].water.class}`]}`),
+  ].join('');
+}
+
+function water(pages) {
+  return [
+    figures(t['page.water.hardness'], pages.map((p) => p.water?.th ?? null), (v) => `${dec1(v)} °f`),
+    cellsRow(t['page.water.scale'], pages.map((p) => (p.water ? waterScale(p.water.th) : t['page.water.none']))),
+    figures(t['page.water.networks'], pages.map((p) => p.water?.networks ?? null), fmtInt, { bars: false }),
+    cellsRow(t['basket.cmp.waterRange'], pages.map((p) => (!p.water ? '–' : p.water.max > p.water.min ? `${dec1(p.water.min)} – ${dec1(p.water.max)} °f` : t['basket.cmp.noGap']))),
   ].join('');
 }
 
@@ -271,6 +278,7 @@ export function compareHTML(pages, meta, fonds) {
     ['demo', t['card.demography'], demography(pages, n)],
     ['comp', t['page.competition'], competition(pages, fonds)],
     ['bread', t['page.bread'], bread(pages)],
+    ['water', t['page.water'], water(pages)],
     ['eco', t['card.economy'], economy(pages)],
     ['inc', t['page.incomeHousing'], income(pages)],
     ['safe', t['page.safetyServices'], safety(pages)],

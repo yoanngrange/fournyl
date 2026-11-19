@@ -140,7 +140,8 @@ département at the centre of the map. Pages are generated at build time (`scrip
 `sitemap.xml` and `robots.txt`; never committed.
 
 **Commune page layout (Nov 19, 2026):** blocks in this order, each the full width of the page: Why this score ·
-Demography · Bakeries and competition · Points of sale of bread within 5 km · Local economy · Income and housing ·
+Demography · Bakeries and competition · Points of sale of bread within 5 km · Tap water (hardness, networks, a
+5-class scale with the commune marked) · Local economy · Income and housing ·
 Safety and services · Politics. Inside a block, its parts sit side by side (`.pg-cols`) and stack on narrow screens.
 **Tables:** when a table's box is narrower than 560 px (phones, or a narrow column), each row header gets a line of
 its own and the values share the width below (`.stack-rows`): no sideways scrolling.
@@ -160,8 +161,8 @@ per commune), then every detailed figure of each commune. A counter shows "n / 5
 (`src/lib/compare-view.js`): one table per theme, one column per commune, header repeated on each page, the most
 favourable value of a row flagged "meilleur", a bar scaled on the row under every figure. Themes: summary, why this
 score (ranks), location maps side by side, demography (population indexed to 100 on one chart, one line style per
-commune; age bands), bakeries and competition, points of sale of bread (maps side by side, counts by kind, hygiene,
-tap water), local economy, income and housing, safety and services, politics. With one commune, its full sheet.
+commune; age bands), bakeries and competition, points of sale of bread (maps side by side, counts by kind, hygiene),
+tap water, local economy, income and housing, safety and services, politics. With one commune, its full sheet.
 **Values in words** ("aucune", "non diffusé") are set smaller than figures and stay on one line; figure grids are
 `<dl>` lists (label `dt`, value and note `dd`).
 **Elections:** a single list always has 100 % of valid votes, so for it the page shows "liste unique" and its share

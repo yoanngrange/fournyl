@@ -626,7 +626,27 @@ body.page { height: auto; background: var(--paper); overflow-x: clip; }
 .pg-hyg i { font-style: normal; letter-spacing: 1px; color: var(--ink); }
 .pg-hyg.is-3, .pg-hyg.is-4 { color: var(--ink); font-weight: 700; } /* never red: red does not encode data (DESIGN.md) */
 .pg-hyg-count { margin: 0 0 8px; }
-.pg-water { margin-bottom: 12px; }
+/* Water hardness scale: five classes (width = their span in °f), the commune's value marked above. */
+.pg-scale { position: relative; display: flex; gap: 2px; margin: 18px 0 4px; }
+.pg-scale-seg { display: flex; flex-direction: column; gap: 3px; min-width: 0; position: relative; }
+.pg-scale-seg i { display: block; height: 12px; background: var(--paper-3); border: 1px solid var(--rule-soft); }
+.pg-scale-seg:nth-child(3) i { background: #E6DFD0; }
+.pg-scale-seg:nth-child(4) i { background: #D2C7B1; }
+.pg-scale-seg:nth-child(5) i { background: #B8AB92; }
+.pg-scale-seg:nth-child(6) i { background: #8F826B; }
+.pg-scale-seg span { font-size: 11px; line-height: 1.2; color: var(--ink-3); }
+.pg-scale-seg small { position: absolute; left: -2px; top: -14px; font-family: var(--font-num); font-size: 10px; color: var(--ink-3); }
+.pg-scale-seg.is-on i { border: 2px solid var(--ink); }
+.pg-scale-seg.is-on span { color: var(--ink); font-weight: 700; }
+.pg-scale-mark { position: absolute; top: -3px; width: 0; height: 0; transform: translateX(-7px); border: 7px solid transparent; border-top: 9px solid var(--ink); border-bottom: 0; z-index: 1; }
+.cmp-table .pg-scale { margin: 16px 0 0; }
+/* A narrow scale (phones, PDF cells): only the commune's class keeps its name, the others would overlap. */
+.pg-scale-wrap { container-type: inline-size; }
+@container (max-width: 480px) {
+  .pg-scale-seg:not(.is-on) span { visibility: hidden; }
+  .pg-scale-seg.is-on span { white-space: nowrap; }
+}
+.cmp-table .pg-scale-seg span { font-family: var(--font-ui); font-size: 9px; }
 .pg-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .bread-pin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #FFFFFF; box-shadow: 0 0 0 1px var(--ink); cursor: pointer; padding: 0; }
 .bread-pin:focus-visible { outline: 3px solid var(--bleu); outline-offset: 2px; }
