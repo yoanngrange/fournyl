@@ -16,6 +16,10 @@ from pipeline.config import CRITERIA, OUT
 SNAPSHOT = Path(__file__).parent / "snapshots" / "44043.json"
 
 
+def fetched(meta, sid):
+    return any(s["id"] == sid and s.get("fetched") for s in meta["sources"])
+
+
 def load(rel):
     return json.loads((OUT / rel).read_text())
 
@@ -118,7 +122,7 @@ def test_commune_pages_exist(index):
         assert (OUT / "commune" / f"{code}.json").exists()
 
 
-def test_bakery_pages(index):
+def test_bakery_pages(index, meta):
     """One record per bakery / pastry shop (a sole trader is never named by company: see build_local.bread_points)."""
     shops = [b for code in index["code"] if (OUT / "bakery" / f"{code}.json").exists() for b in load(f"bakery/{code}.json")]
     if not any(c.startswith("44") for c in index["code"]):
@@ -130,18 +134,23 @@ def test_bakery_pages(index):
         assert all((n["path"] is None) or n["path"].endswith("/") for n in b["near"])
         if b["accounts"]:
             assert b["accounts"]["revenue"] > 0 and len(b["accounts"]["closed"]) == 7
-    assert sum(bool(b["accounts"]) for b in shops) >= 0.05 * len(shops)
+    if fetched(meta, "ratios_inpi"):
+        assert sum(bool(b["accounts"]) for b in shops) >= 0.05 * len(shops)
     # Enrichments: OpenStreetMap (hours, contact), Accès Libre, location history, nearby facilities.
-    assert sum(bool(b["osm"]) for b in shops) >= 0.2 * len(shops)
-    assert sum(bool(b["access"]) for b in shops) >= 0.1 * len(shops)
+    if fetched(meta, "banco"):
+        assert sum(bool(b["osm"]) for b in shops) >= 0.2 * len(shops)
+    if fetched(meta, "acceslibre"):
+        assert sum(bool(b["access"]) for b in shops) >= 0.1 * len(shops)
     assert sum(bool(b["history"]) for b in shops) >= 0.2 * len(shops)
     for b in shops:
-        assert set(b["footfall"]) == {"schools", "secondary", "stations", "supermarkets", "pharmacies", "doctors", "post"}
+        assert b["footfall"] is None or set(b["footfall"]) == {"schools", "secondary", "stations", "supermarkets", "pharmacies", "doctors", "post"}
         for h in b["history"]:
             assert h["to"] >= (h["from"] or 0) and h["kind"] in {"bakery", "pastry", "bake_off", "retail"}
 
 
-def test_commune_risks(index):
+def test_commune_risks(index, meta):
+    if not fetched(meta, "gaspar"):
+        pytest.skip("GASPAR not downloaded in this build (optional source)")
     for code in index["code"]:
         r = load(f"commune/{code}.json")["risks"]
         assert r is not None and r["catnat"]["total"] >= r["catnat"]["recent"] >= 0
@@ -240,8 +249,10 @@ def test_bread_points(index):
     assert sum(p["year"] is not None for p in clisson) >= 0.9 * len(clisson)
 
 
-def test_hygiene_inspections(index):
+def test_hygiene_inspections(index, meta):
     """Alim'Confiance results reach the bread points (joined on SIRET, which is never exported)."""
+    if not fetched(meta, "alimconfiance"):
+        pytest.skip("Alim'Confiance not downloaded in this build (optional source)")
     pts = [pt for code in index["code"] for pt in load(f"commune/{code}.json")["bread_points"] if pt["here"]]
     rated = [pt for pt in pts if pt["hyg"]]
     if any(c.startswith("44") for c in index["code"]):
@@ -250,6 +261,8 @@ def test_hygiene_inspections(index):
 
 
 def test_water_hardness(index, meta):
+    if not fetched(meta, "eau_potable"):
+        pytest.skip("tap water file not downloaded in this build (optional source)")
     assert meta["years"]["water"] >= 2024
     classes = {"very_soft", "soft", "medium", "hard", "very_hard"}
     with_water = 0

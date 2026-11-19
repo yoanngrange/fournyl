@@ -31,13 +31,25 @@ jobs:
         id: month
         run: echo "value=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
 
-      # Raw downloads (~2.5 GB, mostly SIRENE) are reused within a month and for unchanged sources.
-      - uses: actions/cache@v4
+      # Raw downloads (~3 GB, mostly SIRENE) are reused within a month and for unchanged sources.
+      - uses: actions/cache/restore@v4
+        id: raw
         with:
           path: pipeline/raw
           key: raw-${{ steps.month.outputs.value }}-${{ hashFiles('pipeline/config.py') }}
           # A config.py change (e.g. a new criterion) starts from this month's downloads instead of none.
           restore-keys: raw-${{ steps.month.outputs.value }}-
+
+      # Downloads first, then saved even if a later step fails: a slow source (the INPI accounts export takes
+      # ~10 min) is not downloaded again by the next run. Optional sources that fail are skipped.
+      - name: Download sources
+        run: uv run python -m pipeline.fetch
+
+      - uses: actions/cache/save@v4
+        if: always() && steps.raw.outputs.cache-hit != 'true'
+        with:
+          path: pipeline/raw
+          key: raw-${{ steps.month.outputs.value }}-${{ hashFiles('pipeline/config.py') }}
 
       - name: Build data
         run: uv run python -m pipeline.run --all

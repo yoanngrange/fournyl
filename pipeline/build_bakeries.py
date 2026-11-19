@@ -86,6 +86,8 @@ def _address(r) -> str | None:
 
 def _accounts(sirens: set[str]) -> pd.DataFrame:
     """Latest published revenue (and net income) per company: last closing date with a revenue figure."""
+    if not fetch.available("ratios_inpi"):
+        return pd.DataFrame(columns=["closed", "chiffre_d_affaires", "resultat_net"])
     a = pq.read_table(
         fetch.path("ratios_inpi"),
         columns=["siren", "date_cloture_exercice", "chiffre_d_affaires", "resultat_net", "confidentiality"],
@@ -167,6 +169,9 @@ def _osm(pages: pd.DataFrame) -> dict[int, dict]:
     """Opening hours, website, phone and wheelchair access from OpenStreetMap (BANCO export)."""
     import zipfile
 
+    if not fetch.available("banco"):
+        return {}
+
     with zipfile.ZipFile(fetch.path("banco")) as z:
         o = pd.read_csv(z.open("data.csv"), sep=";", dtype=str, usecols=[
             "X", "Y", "osm_id", "type", "opening_hours", "website", "phone", "wheelchair", "siret", "com_insee", "last_update"])
@@ -196,6 +201,8 @@ def _bool(v):
 
 def _access(pages: pd.DataFrame) -> dict[int, dict]:
     """Accessibility of the entrance, from Accès Libre (filled in by shops, councils and volunteers)."""
+    if not fetch.available("acceslibre"):
+        return {}
     cols = ["id", "siret", "activite", "code_insee", "longitude", "latitude", "entree_plain_pied", "entree_marches",
             "entree_marches_rampe", "entree_largeur_mini", "entree_porte_type", "stationnement_pmr", "stationnement_ext_pmr",
             "accueil_personnels", "cheminement_ext_plain_pied"]
@@ -278,6 +285,8 @@ def _history(pages: pd.DataFrame) -> dict[int, list[dict]]:
 
 def _footfall(pages: pd.DataFrame) -> dict[int, dict]:
     """Facilities that bring passers-by within FOOTFALL_M of the shop (BPE 2025, geolocated)."""
+    if not fetch.available("bpe_xy"):
+        return {}
     codes = {c: k for k, lst in FOOTFALL.items() for c in lst}
     b = pq.read_table(
         fetch.path("bpe_xy"), columns=["TYPEQU", "LAMBERT_X", "LAMBERT_Y", "EPSG"],

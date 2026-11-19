@@ -26,6 +26,8 @@ def _member(z: zipfile.ZipFile, prefix: str):
 
 def hardness(codes: set[str]) -> dict:
     """{code: {"th", "min", "max", "networks", "class"}} for communes with at least one measure."""
+    if not fetch.available("eau_potable"):
+        return {}
     with zipfile.ZipFile(fetch.path("eau_potable")) as z:
         chunks = pd.read_csv(
             _member(z, "DIS_RESULT_"),
