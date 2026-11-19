@@ -16,10 +16,20 @@ export function readBasket() {
 
 export const inBasket = (code) => readBasket().includes(code);
 
-/** Adds or removes a commune (kept in the order they were added); returns whether it is now in the basket. */
-export function toggleBasket(code) {
+/** One market study holds up to 5 communes (one price for 1 to 5). */
+export const MAX_BASKET = 5;
+
+/**
+ * Adds or removes a commune (kept in the order they were added); returns whether it is now in the basket.
+ * A full basket refuses a sixth commune and says so next to `btn`, if given.
+ */
+export function toggleBasket(code, btn = null) {
   const list = readBasket();
   const on = !list.includes(code);
+  if (on && list.length >= MAX_BASKET) {
+    if (btn) fullNotice(btn);
+    return false;
+  }
   const next = on ? [...list, code] : list.filter((x) => x !== code);
   try {
     localStorage.setItem(KEY, JSON.stringify(next));
@@ -39,6 +49,21 @@ export const basketButton = (inBasket, cls = 'pg-basket', withText = true) =>
   `<button type="button" class="${cls}" aria-pressed="${inBasket}"${withText ? '' : ` aria-label="${t[inBasket ? 'basket.remove' : 'basket.add']}"`}>${BASKET_ICON}${
     withText ? `<span>${t[inBasket ? 'basket.in' : 'basket.add']}</span>` : ''
   }</button>`;
+
+/** "Panier plein" under the button for a few seconds (announced to screen readers). */
+function fullNotice(btn) {
+  const host = btn.parentElement;
+  let note = host.nextElementSibling?.classList.contains('basket-full') ? host.nextElementSibling : null;
+  if (!note) {
+    note = document.createElement('p');
+    note.className = 'basket-full';
+    note.setAttribute('role', 'status');
+    host.after(note);
+  }
+  note.innerHTML = tr('basket.full', { n: MAX_BASKET });
+  clearTimeout(note.timer);
+  note.timer = setTimeout(() => note.remove(), 6000);
+}
 
 /** Updates a basket button after a toggle. */
 export function setBasketButton(btn, inBasket) {

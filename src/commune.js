@@ -9,7 +9,7 @@ const main = document.getElementById('page');
 async function start() {
   const [p, meta, fonds] = await Promise.all([getJSON(`commune/${code}.json`), getJSON('meta.json'), getJSON('fonds.json')]);
   main.innerHTML = communeHTML(p, meta, fonds, { inBasket: inBasket(code) });
-  main.querySelector('.pg-basket').addEventListener('click', (e) => setBasketButton(e.currentTarget, toggleBasket(code)));
+  main.querySelector('.pg-basket').addEventListener('click', (e) => setBasketButton(e.currentTarget, toggleBasket(code, e.currentTarget)));
   mountBasketLinks();
   stickyHead(main);
   wireCommune(main, p);

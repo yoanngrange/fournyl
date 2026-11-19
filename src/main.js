@@ -10,7 +10,7 @@ import { createCard } from './card.js';
 import { createSearch } from './search.js';
 import { mountBasketLinks } from './lib/basket.js';
 
-const TOP_N = 8;
+const TOP_N = 5;
 const MAX_RANKED = 1500; // above this many communes on screen, delivery spots are not ranked
 
 // Static UI copy from src/i18n/fr.js.
@@ -18,6 +18,13 @@ for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t[el
 for (const el of document.querySelectorAll('[data-i18n-html]')) el.innerHTML = t[el.dataset.i18nHtml];
 for (const el of document.querySelectorAll('[data-i18n-aria-label]')) el.setAttribute('aria-label', t[el.dataset.i18nAriaLabel]);
 for (const el of document.querySelectorAll('[data-i18n-placeholder]')) el.placeholder = t[el.dataset.i18nPlaceholder];
+for (const el of document.querySelectorAll('[data-help]')) {
+  el.setAttribute('aria-label', tr('help.q', { topic: t[el.dataset.help] }));
+  el.title = el.getAttribute('aria-label');
+}
+
+// Phones: map only. No sliders, no ranking, no search; the sidebar opens only for the delivery settings.
+const phone = matchMedia('(max-width: 720px)');
 
 const status = document.getElementById('status');
 status.textContent = t['app.loading'];
@@ -119,6 +126,7 @@ async function start() {
         mapApi.select(state.sel);
       },
       move: refreshPanel,
+      moving: () => placeCard(),
       busy: (on) => {
         document.getElementById('map-busy').hidden = !on;
       },
@@ -149,8 +157,6 @@ async function start() {
     document.getElementById('search-status'),
     communes,
     (code) => {
-      topbar.classList.remove('is-searching');
-      searchOpen.setAttribute('aria-expanded', 'false');
       if (dlv.on) setBase(code, { zoom: true }); // in delivery mode, a searched commune becomes the bakehouse
       select(code, { fly: true, focus: true });
     },
@@ -158,7 +164,6 @@ async function start() {
 
   document.getElementById('zoom-in').addEventListener('click', mapApi.zoomIn);
   document.getElementById('zoom-out').addEventListener('click', mapApi.zoomOut);
-  document.getElementById('zoom-reset').addEventListener('click', mapApi.reset);
   document.getElementById('crumb-france').addEventListener('click', mapApi.reset);
 
   const toggle = document.getElementById('sheet-toggle');
@@ -168,8 +173,7 @@ async function start() {
     document.getElementById('sidebar').classList.toggle('is-open', open);
   });
 
-  // Phones: no sliders. The shop / round choice moves to the top bar, above the map.
-  const phone = matchMedia('(max-width: 720px)');
+  // Phones: the shop / round switch moves to the top bar, above the map.
   const modeEl = document.getElementById('mode');
   const placeMode = () => {
     if (phone.matches) document.getElementById('topbar').append(modeEl);
@@ -177,10 +181,8 @@ async function start() {
   };
   phone.addEventListener('change', placeMode);
   placeMode();
-  document.getElementById('mobile-reset').addEventListener('click', () => {
-    state.filters = {};
-    recompute();
-  });
+  // Filters from a shared link cannot be seen or changed on a phone: drop them rather than hide communes silently.
+  if (phone.matches) state.filters = {};
 
   const legend = document.getElementById('legend');
   const legendToggle = document.getElementById('legend-toggle');
@@ -192,16 +194,6 @@ async function start() {
     const open = legendToggle.getAttribute('aria-expanded') !== 'true';
     legendToggle.setAttribute('aria-expanded', String(open));
     legend.classList.toggle('is-collapsed', !open);
-  });
-
-  const topbar = document.getElementById('topbar');
-  const searchOpen = document.getElementById('search-open');
-  const searchInput = document.getElementById('search');
-  searchOpen.addEventListener('click', () => {
-    const open = !topbar.classList.contains('is-searching');
-    topbar.classList.toggle('is-searching', open);
-    searchOpen.setAttribute('aria-expanded', String(open));
-    if (open) searchInput.focus();
   });
 
   // "Around me": asked only when the button is pressed; the position never leaves the browser.
@@ -226,19 +218,18 @@ async function start() {
   showNotice();
 
   // ---------- delivery mode ----------
-  const modeShop = document.getElementById('mode-shop');
-  const modeRound = document.getElementById('mode-round');
+  const modeToggle = document.getElementById('mode-toggle');
   const dlvBody = document.getElementById('delivery-body');
   const coverKm = document.getElementById('cover-km');
   const coverN = document.getElementById('cover-n');
   const slider = document.getElementById('cover-slider');
 
   function syncDeliveryControls() {
-    modeShop.setAttribute('aria-pressed', String(!dlv.on));
-    modeRound.setAttribute('aria-pressed', String(dlv.on));
+    modeToggle.setAttribute('aria-checked', String(dlv.on));
+    modeToggle.setAttribute('aria-label', `${t['mode.title']} : ${t[dlv.on ? 'mode.round' : 'mode.shop']}`);
+    document.body.classList.toggle('is-round', dlv.on);
     dlvBody.hidden = !dlv.on;
     document.querySelector('.filters').hidden = dlv.on;
-    document.getElementById('filters-off').hidden = !dlv.on;
     coverKm.setAttribute('aria-pressed', String(dlv.cover === 'km'));
     coverN.setAttribute('aria-pressed', String(dlv.cover === 'n'));
     const byKm = dlv.cover === 'km';
@@ -249,7 +240,6 @@ async function start() {
     slider.value = byKm ? dlv.radius : dlv.count;
     document.getElementById('cover-label').textContent = t[byKm ? 'delivery.radius' : 'delivery.count'];
     document.getElementById('cover-value').textContent = tr(byKm ? 'delivery.radiusValue' : 'delivery.countValue', { n: slider.value });
-    document.getElementById('cover-help').textContent = t[byKm ? 'delivery.helpKm' : 'delivery.helpN'];
   }
 
   /** zoom: frame the delivery area once it is known (after a click, a search or a pick in the list). */
@@ -321,18 +311,16 @@ async function start() {
     ].join('');
   }
 
-  for (const [btn, on] of [[modeShop, false], [modeRound, true]]) {
-    btn.addEventListener('click', () => {
-      if (dlv.on === on) return;
-      dlv.on = on;
-      syncDeliveryControls();
-      if (on) mapApi.loadVisible();
-      // The commune selected in shop mode becomes the bakehouse: the range settings then apply at once.
-      if (on && !dlv.base && state.sel) setBase(state.sel, { zoom: true });
-      else if (on && dlv.base) setBase(dlv.base);
-      else recompute();
-    });
-  }
+  modeToggle.addEventListener('click', () => {
+    const on = !dlv.on;
+    dlv.on = on;
+    syncDeliveryControls();
+    if (on) mapApi.loadVisible();
+    // The commune selected in shop mode becomes the bakehouse: the range settings then apply at once.
+    if (on && !dlv.base && state.sel) setBase(state.sel, { zoom: true });
+    else if (on && dlv.base) setBase(dlv.base);
+    else recompute();
+  });
   for (const [btn, cover] of [[coverKm, 'km'], [coverN, 'n']]) {
     btn.addEventListener('click', () => {
       dlv.cover = cover;
@@ -365,10 +353,28 @@ async function start() {
       const c = byCode.get(state.sel);
       if (fly && !dlv.on) mapApi.focus(c); // delivery mode frames the whole area instead
       card.show(c, cardView(c), { focus });
+      placeCard();
     } else {
       card.hide();
     }
     writeState(state);
+  }
+
+  /** Phones: the card is a bubble next to the commune, above it when there is room, and follows the map. */
+  const cardEl = document.getElementById('card');
+  function placeCard() {
+    if (!phone.matches || !state.sel || cardEl.hidden) {
+      cardEl.style.left = cardEl.style.top = '';
+      return;
+    }
+    const c = byCode.get(state.sel);
+    const pt = mapApi.project(c.lon, c.lat);
+    const wrap = cardEl.parentElement.getBoundingClientRect();
+    const w = cardEl.offsetWidth;
+    const h = cardEl.offsetHeight;
+    const top = pt.y - h - 14 >= 120 ? pt.y - h - 14 : Math.min(pt.y + 14, wrap.height - h - 12);
+    cardEl.style.left = `${Math.min(Math.max(12, pt.x - w / 2), wrap.width - w - 12)}px`;
+    cardEl.style.top = `${Math.max(120, top)}px`;
   }
 
   function placeTooltip(point) {
@@ -382,7 +388,7 @@ async function start() {
   }
 
   function showTooltip(code, point) {
-    if (!code || code === state.sel || !view.has(code)) {
+    if (phone.matches || !code || code === state.sel || !view.has(code)) {
       tooltip.hidden = true;
       return;
     }
@@ -458,7 +464,10 @@ async function start() {
     renderLegend(cuts);
 
     refreshPanel();
-    if (state.sel) card.show(byCode.get(state.sel), cardView(byCode.get(state.sel)));
+    if (state.sel) {
+      card.show(byCode.get(state.sel), cardView(byCode.get(state.sel)));
+      placeCard();
+    }
     writeState(state);
   }
 
@@ -550,9 +559,7 @@ async function start() {
       topItems = passing.slice(0, TOP_N);
     }
     const topEmpty = dlv.on && !national && visible.length > MAX_RANKED ? t['delivery.zoomToRank'] : t['top.empty'];
-    sidebar.update({ ranges: visibleRanges(visible), inView: visible.length, topTitle, topItems, topEmpty });
-    document.getElementById('sheet-title').textContent = dlv.on && !national ? t['mobile.sheetRound'] : t['mobile.sheet'];
-    document.getElementById('mobile-filters').hidden = dlv.on || !Object.keys(state.filters).length;
+    sidebar.update({ ranges: visibleRanges(visible), topTitle, topItems, topEmpty });
   }
 
   /** Communes on screen ranked by inhabitants without a bakery that a bakehouse there would serve. */

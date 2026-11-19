@@ -54,3 +54,7 @@ export function fmtPostcode(cp) {
   if (!all.length) return '';
   return all.length === 1 ? tr('cp.one', { cp: all[0] }) : tr('cp.more', { cp: all[0], n: all.length - 1 });
 }
+
+/** The "?" that replaces explanations in the interface: a link to the matching part of the help page. */
+export const helpLink = (anchor, topic, cls = '') =>
+  `<a class="help-q${cls ? ` ${cls}` : ''}" href="aide/${anchor ? `#${anchor}` : ''}" aria-label="${tr('help.q', { topic })}" title="${tr('help.q', { topic })}">?</a>`;

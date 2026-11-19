@@ -1,7 +1,7 @@
 // Pinned commune card on the map: score and the four key figures, then a link to the full commune page.
 import t from './i18n/fr.js';
-import { fmtCriterion, fmtInt, fmtPostcode, tr } from './lib/format.js';
-import { ROAD_FACTOR, ROAD_SPEED_KMH, roadTrip } from './lib/delivery.js';
+import { fmtCriterion, fmtInt, fmtPostcode, helpLink, tr } from './lib/format.js';
+import { roadTrip } from './lib/delivery.js';
 import { basketButton, inBasket, toggleBasket } from './lib/basket.js';
 import { communePath } from './lib/slug.js';
 
@@ -29,7 +29,7 @@ export function createCard(root, { onClose, meta }) {
   function zoneBlock(z, y) {
     if (!z) return '';
     return `<section class="card-zone" aria-labelledby="card-zone-title">
-        <h3 id="card-zone-title">${z.radius ? tr('card.zone.titleKm', { km: z.radius }) : tr('card.zone.titleN', { n: z.n })}</h3>
+        <h3 id="card-zone-title">${z.radius ? tr('card.zone.titleKm', { km: z.radius }) : tr('card.zone.titleN', { n: z.n })}${helpLink('tournee', t['delivery.title'])}</h3>
         <div class="kpis">
           ${kpi(t['card.zone.communes'], fmtInt(z.n), tr('card.zone.noBakery', { n: fmtInt(z.noBakery) }))}
           ${kpi(t['card.inhabitants'], fmtInt(z.pop), tr('card.inYear', { year: y.census }))}
@@ -38,7 +38,6 @@ export function createCard(root, { onClose, meta }) {
           ${trip(t['card.zone.northSouth'], z.northSouthKm)}
           ${trip(t['card.zone.eastWest'], z.eastWestKm)}
         </div>
-        <p class="card-source">${tr('card.zone.estimate', { factor: String(ROAD_FACTOR).replace('.', ','), speed: ROAD_SPEED_KMH })}</p>
       </section>`;
   }
 
@@ -68,7 +67,6 @@ export function createCard(root, { onClose, meta }) {
         ${kpi(t['card.perBakery'], c.bakeries ? fmtInt(c.pop / c.bakeries) : '—')}
         ${kpi(t['card.income'], fmtCriterion('income', c.v.income), tr('card.inYear', { year: y.income }))}
       </div>
-      <p class="card-source">${tr('card.src.short', { census: y.census, bpe: y.bpe, income: y.income })}</p>
       ${zoneBlock(view.zone, y)}
       <div class="card-actions">
         <a class="card-page" href="${communePath(view.depName, c.name, c.code)}">${t['card.page']}</a>
@@ -77,7 +75,8 @@ export function createCard(root, { onClose, meta }) {
 
     root.querySelector('.card-close').addEventListener('click', onClose);
     root.querySelector('.card-basket').addEventListener('click', () => {
-      toggleBasket(c.code);
+      const btn = root.querySelector('.card-basket');
+      if (!toggleBasket(c.code, btn) && !inBasket(c.code)) return; // basket full: the notice stays visible
       render(c, view);
       root.querySelector('.card-basket').focus();
     });

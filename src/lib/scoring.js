@@ -56,13 +56,15 @@ export const bin = (s) =>
   s == null ? 'unknown' : s >= 75 ? 'top' : s >= 60 ? 'go' : s >= 40 ? 'maybe' : s >= 25 ? 'avoid' : 'worst';
 
 // Crime per 1,000 inhabitants explodes where many visitors meet few residents (Roissy-en-France ≈ 990 ‰,
-// ski resorts, Saint-Tropez). The value is kept, but the slider stops at the 99th percentile of the
-// communes on screen so the handles stay usable; the end of the slider (open bound) still includes them.
+// ski resorts, Saint-Tropez). The value is kept, but the slider never goes past CRIME_HIGH, and stops at the
+// 99th percentile of the communes on screen when that is lower, so the handles stay usable. The end of the
+// slider (open bound, "100 et +") still includes the outliers.
 const CAPPED = { crime: 0.99 };
-const CAP_MIN_VALUES = 100; // too few communes on screen: no cap
+const CAP_MIN_VALUES = 100; // too few communes on screen for a percentile: only the fixed ceiling applies
 
-/** Crime rate above which the commune page explains that visitors, not residents, drive the figure. */
+/** Crime rate above which a commune is an outlier (visitors, not residents, drive the figure). */
 export const CRIME_HIGH = 100;
+const CEILING = { crime: CRIME_HIGH };
 
 /** Slider bounds = min/max of the raw values of the given communes (max capped for CAPPED criteria). */
 export function visibleRanges(communes) {
@@ -84,9 +86,12 @@ export function visibleRanges(communes) {
       if (v > max) max = v;
     }
     const q = CAPPED[c.key];
-    if (q && values.length >= CAP_MIN_VALUES) {
-      values.sort((a, b) => a - b);
-      const cap = values[Math.floor(q * (values.length - 1))];
+    if (q) {
+      let cap = CEILING[c.key] ?? Infinity;
+      if (values.length >= CAP_MIN_VALUES) {
+        values.sort((a, b) => a - b);
+        cap = Math.min(cap, values[Math.floor(q * (values.length - 1))]);
+      }
       if (cap < max && cap > min) {
         out[c.key] = { min, max: cap, capped: true };
         continue;

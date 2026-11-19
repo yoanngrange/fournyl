@@ -24,8 +24,8 @@ PAGES = {
     "": "communes-index.json",
     "loire-atlantique/": 'name="fournyl-dep" content="44"',
     "loire-atlantique/clisson-44043/": 'content="44043"',
-    "infos-legales/": "src/legal.js",
-    "sources/": "src/sources.js",
+    "aide/": "src/aide.js",
+    "infos-legales/": "../aide/",  # former address, now a redirect
     "panier/": "src/panier.js",
     "sw.js": "SHELL_FILES",
 }

@@ -58,7 +58,7 @@ def test_routes(site):
 def test_commune_page_has_footer_and_no_unfilled_placeholders(site):
     page = site.commune_page("44043")
     assert "{{" not in page
-    assert 'href="infos-legales/"' in page and "site-footer" in page
+    assert 'href="aide/"' in page and "site-footer" in page
 
 
 def test_analytics_tag_only_with_token():
@@ -79,7 +79,7 @@ def test_static_pages_get_analytics_marker_replaced(site, tmp_path, monkeypatch)
     for rel in pages.STATIC_PAGES:
         text = (tmp_path / rel).read_text()
         assert "<!-- analytics -->" not in text and '"token": "tok"' in text
-    assert "infos-legales/" in (tmp_path / "sitemap.xml").read_text()
+    assert "aide/" in (tmp_path / "sitemap.xml").read_text()
 
 
 def test_at_place():
@@ -98,7 +98,7 @@ def test_seo_tags(site, tmp_path):
     assert dep.count("<title>") == 1 and "Loire-Atlantique (44)" in dep
     assert 'href="loire-atlantique/clisson-44043/"' in dep and "<!-- places -->" not in dep
     assert dep.count('property="og:title"') == 1  # the shell's generic tags are replaced, not duplicated
-    for rel in ("index.html", "sources/index.html", "infos-legales/index.html", "panier/index.html"):
+    for rel in ("index.html", "aide/index.html", "panier/index.html"):
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(ROOT / "public" / rel, tmp_path / rel)
     site.write(tmp_path)
@@ -108,5 +108,5 @@ def test_seo_tags(site, tmp_path):
     llms = (tmp_path / "llms.txt").read_text()
     assert llms.startswith("# Fournyl\n") and f"({SITE_URL}loire-atlantique/)" in llms
     sitemap = (tmp_path / "sitemap.xml").read_text()
-    assert sitemap.count("<url>") == 3 + len(site.exported) + len(site.communes) and "<lastmod>" in sitemap
+    assert sitemap.count("<url>") == 2 + len(site.exported) + len(site.communes) and "<lastmod>" in sitemap
     assert "noindex" in (tmp_path / "panier/index.html").read_text()

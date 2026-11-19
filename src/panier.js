@@ -1,15 +1,15 @@
-// Basket page (/panier/): the communes kept aside in this browser, compared side by side (up to 5) and
-// exported to PDF through the browser's print dialog: the comparison, then one full commune sheet per page.
+// Basket page (/panier/): one market study of 1 to 5 communes kept aside in this browser, compared side by side
+// and exported to PDF in one go through the browser's print dialog: the comparison, then one full sheet per commune.
+// One price for 1 to 5 communes (1 €, free during the launch: no payment yet).
 // The list lives in localStorage only; data comes from data/communes-index.json and data/commune/<code>.json.
 import t from './i18n/fr.js';
 import { BIN_COLOURS, WEIGHTS, bin, category, score } from './lib/scoring.js';
 import { fmtCriterion, fmtInt, fmtPostcode, fmtSigned, tr } from './lib/format.js';
-import { readBasket, toggleBasket } from './lib/basket.js';
+import { MAX_BASKET, readBasket, toggleBasket } from './lib/basket.js';
 import { communeHTML, getJSON, wireCommune } from './lib/commune-view.js';
 import { communePath } from './lib/slug.js';
 import { addChrome } from './lib/chrome.js';
 
-const MAX_COMPARE = 5;
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
 const crime = (v) => (v == null ? t['card.notPublished'] : `${fmtCriterion('crime', v)} ‰`);
 const known = (key, v) => (v == null ? t['card.notPublished'] : fmtCriterion(key, v));
@@ -26,8 +26,6 @@ const ROWS = [
   ['card.income', (c) => known('income', c.v.income), (c) => c.v.income, true],
   ['card.crime', (c) => crime(c.v.crime), (c) => c.v.crime, false],
 ];
-
-let chosen = null; // codes ticked for comparison
 
 function compareTable(compared, { links = true } = {}) {
   const head = compared
@@ -88,7 +86,7 @@ async function start() {
     exporting = true;
     button.disabled = true;
     const list = basket();
-    const compared = list.filter((c) => chosen.includes(c.code));
+    const compared = list;
     try {
       const [meta, fonds] = await Promise.all([getJSON('meta.json'), getJSON('fonds.json')]);
       const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -98,7 +96,7 @@ async function start() {
         printDoc.insertAdjacentHTML(
           'beforeend',
           `<section class="print-sheet print-compare doc-main"><p class="print-meta">${tr('basket.printMeta', { url: 'fournyl.com/panier/', date })}</p>
-            <h1>${t['basket.printCompare']}</h1>${compareTable(compared, { links: false })}<p class="help">${t['basket.note']}</p></section>`,
+            <h1>${t['basket.printCompare']}</h1>${compareTable(compared, { links: false })}</section>`,
         );
       }
       for (const [i, c] of list.entries()) {
@@ -134,31 +132,44 @@ async function start() {
     }
   }
 
+  /** "3 / 5": five squares, filled for each commune in the study, and the single price. */
+  function counter(n) {
+    const r = MAX_BASKET - n;
+    const boxes = Array.from({ length: MAX_BASKET }, (_, i) => `<i class="${i < n ? 'is-on' : ''}"></i>`).join('');
+    const left = r > 1 ? tr('basket.left', { r }) : r === 1 ? t['basket.leftOne'] : tr('basket.complete', { max: MAX_BASKET });
+    return `<div class="basket-counter" role="status">
+        <div class="basket-meter" aria-hidden="true">${boxes}</div>
+        <p><b class="num">${tr('basket.counter', { n: Math.min(n, MAX_BASKET), max: MAX_BASKET })}</b> ${t['basket.counterLabel']}</p>
+        <p class="basket-price"><b>${tr('basket.price', { max: MAX_BASKET })}</b> · ${t['basket.free']}</p>
+        <p>${n > MAX_BASKET ? '' : left}</p>
+      </div>`;
+  }
+
+  const contents = () => `<h2>${t['basket.contentsTitle']}</h2><ul>${t['basket.contents'].map((x) => `<li>${x}</li>`).join('')}</ul>`;
+
   function render() {
     const list = basket();
-    chosen = (chosen ?? list.slice(0, MAX_COMPARE).map((c) => c.code)).filter((code) => list.some((c) => c.code === code));
     if (!list.length) {
       main.innerHTML = `<h1>${t['basket.title']}</h1><p class="doc-intro">${t['basket.intro']}</p>
-        <div class="callout"><p>${t['basket.empty']}</p></div><p><a class="btn" href="./">${t['basket.toMap']}</a></p>`;
+        ${counter(0)}<div class="callout"><p>${t['basket.empty']}</p></div><p><a class="btn" href="./">${t['basket.toMap']}</a></p>${contents()}`;
       return;
     }
-    const compared = list.filter((c) => chosen.includes(c.code));
+    // Baskets filled before the 5-commune limit (Nov 2026) can hold more: the export waits until some are removed.
+    const tooMany = list.length > MAX_BASKET;
     const swatch = (c) => `<span class="swatch ${c.cat === 'avoid' ? 'is-hatched' : ''}" style="background:${c.fill}"></span>`;
     main.innerHTML = `<h1>${t['basket.title']}</h1>
       <p class="doc-intro">${t['basket.intro']}</p>
+      ${counter(list.length)}
+      ${tooMany ? `<div class="callout" role="alert"><p>${tr('basket.tooMany', { n: list.length, max: MAX_BASKET, r: list.length - MAX_BASKET })}</p></div>` : ''}
       <div class="basket-export">
-        <button type="button" class="btn" id="export">${t['basket.export']}</button>
-        <p class="help">${t['basket.exportHelp']}</p>
-        <p class="help" id="export-status" role="status" aria-live="polite"></p>
+        <button type="button" class="btn" id="export"${tooMany ? ' disabled' : ''}>${t['basket.export']}</button>
+        <p class="help-small">${t['basket.exportHelp']}</p>
+        <p class="help-small" id="export-status" role="status" aria-live="polite"></p>
       </div>
-      <h2>${tr('basket.listTitle', { n: list.length })}</h2>
-      <p class="help">${tr('basket.pick', { n: MAX_COMPARE })}</p>
+      <h2>${t['basket.listTitle']}</h2>
       <ul class="sel-list">${list
         .map(
           (c) => `<li>
-            <input type="checkbox" id="cmp-${c.code}" data-code="${c.code}" ${chosen.includes(c.code) ? 'checked' : ''}
-              ${!chosen.includes(c.code) && chosen.length >= MAX_COMPARE ? 'disabled' : ''}>
-            <label for="cmp-${c.code}" class="visually-hidden">${tr('basket.compareOne', { name: esc(c.name) })}</label>
             ${swatch(c)}
             <a href="${communePath(c.depName, c.name, c.code)}">${esc(c.name)}</a>
             <small>${[fmtPostcode(c.cp), esc(c.depName)].filter(Boolean).join(' · ')}</small>
@@ -167,16 +178,10 @@ async function start() {
           </li>`,
         )
         .join('')}</ul>
-      ${compared.length ? `<h2>${t['basket.compareTitle']}</h2>${compareTable(compared)}<p class="help">${t['basket.note']}</p>` : ''}`;
+      ${list.length > 1 ? `<h2>${t['basket.compareTitle']}</h2>${compareTable(list)}` : ''}
+      ${contents()}`;
 
     main.querySelector('#export').addEventListener('click', (e) => exportPdf(main.querySelector('#export-status'), e.currentTarget));
-    for (const box of main.querySelectorAll('.sel-list input')) {
-      box.addEventListener('change', () => {
-        chosen = box.checked ? [...chosen, box.dataset.code] : chosen.filter((x) => x !== box.dataset.code);
-        render();
-        document.getElementById(`cmp-${box.dataset.code}`)?.focus();
-      });
-    }
     for (const btn of main.querySelectorAll('.sel-remove')) {
       btn.addEventListener('click', () => {
         toggleBasket(btn.dataset.code);

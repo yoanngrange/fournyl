@@ -27,7 +27,7 @@
   <div class="app">
     <aside class="sidebar" id="sidebar" aria-labelledby="app-title">
       <button type="button" class="sheet-toggle" id="sheet-toggle" aria-expanded="false" aria-controls="sidebar-body">
-        <span id="sheet-title" data-i18n="top.title"></span>
+        <span id="sheet-title" data-i18n="delivery.title"></span>
       </button>
       <div class="sidebar-body" id="sidebar-body">
         <div class="brand">
@@ -35,20 +35,24 @@
             <img class="brand-mark" src="img/mark.svg" alt="" width="40" height="40">
             <h1 id="app-title" class="brand-name" data-i18n="app.name"></h1>
           </a>
-          <a class="basket-link" href="panier/" data-basket-link>Panier</a>
+          <span class="brand-tools">
+            <a class="basket-link" href="panier/" data-basket-link>Panier</a>
+            <a class="help-q" href="aide/" data-help="help.link">?</a>
+          </span>
         </div>
-        <p class="intro" data-i18n="app.intro"></p>
 
         <div class="mode" id="mode">
           <span class="label" id="mode-label" data-i18n="mode.title"></span>
-          <div class="mode-switch" role="group" aria-labelledby="mode-label">
-            <button type="button" id="mode-shop"><b data-i18n="mode.shop"></b><small data-i18n="mode.shopHint"></small></button>
-            <button type="button" id="mode-round"><b data-i18n="mode.round"></b><small data-i18n="mode.roundHint"></small></button>
-          </div>
+          <!-- One switch: off = en boutique, on = en tournée. Both choices stay written next to it. -->
+          <button type="button" class="mode-toggle" id="mode-toggle" role="switch" aria-checked="false" aria-describedby="mode-label">
+            <span class="mode-opt is-shop" data-i18n="mode.shop"></span>
+            <span class="mode-track" aria-hidden="true"><span class="mode-knob"></span></span>
+            <span class="mode-opt is-round" data-i18n="mode.round"></span>
+          </button>
         </div>
 
         <section class="delivery" id="delivery-body" aria-labelledby="delivery-label" hidden>
-          <h2 id="delivery-label" data-i18n="delivery.title"></h2>
+          <div class="section-head"><h2 id="delivery-label" data-i18n="delivery.title"></h2><a class="help-q" href="aide/#tournee" data-help="delivery.title">?</a></div>
           <div class="segmented" role="group" data-i18n-aria-label="delivery.coverLabel">
             <button type="button" id="cover-km" data-i18n="delivery.byDistance"></button>
             <button type="button" id="cover-n" data-i18n="delivery.byNeighbours"></button>
@@ -58,36 +62,22 @@
             <output for="cover-slider" id="cover-value"></output>
           </div>
           <input type="range" class="single" id="cover-slider">
-          <p class="help" id="cover-help"></p>
           <div class="reach" id="reach" aria-live="polite"></div>
         </section>
 
-        <p class="filters-off" id="filters-off" data-i18n="delivery.filtersOff" hidden></p>
-        <p class="mobile-filters" id="mobile-filters" hidden>
-          <span data-i18n="mobile.filtersActive"></span>
-          <button type="button" class="link-btn" id="mobile-reset" data-i18n="filters.reset"></button>
-        </p>
         <section class="filters" aria-labelledby="filters-title">
           <div class="section-head">
-            <h2 id="filters-title" data-i18n="filters.title"></h2>
+            <h2 id="filters-title" data-i18n="filters.title"></h2><a class="help-q" href="aide/#carte" data-help="filters.title">?</a>
+            <span class="grow"></span>
             <button type="button" class="link-btn" id="reset" data-i18n="filters.reset"></button>
           </div>
-          <p class="help" id="filters-help"></p>
           <div id="criteria"></div>
         </section>
 
-        <section aria-labelledby="top-title">
-          <h2 id="top-title" data-i18n="top.title"></h2>
+        <section class="top" aria-labelledby="top-title">
+          <div class="section-head"><h2 id="top-title" data-i18n="top.title"></h2><a class="help-q" href="aide/#classement" data-help="top.help">?</a></div>
           <ol class="top-list" id="top-list"></ol>
         </section>
-
-        <p class="site-note" data-i18n="legal.short"></p>
-        <ul class="site-links">
-          <li><a href="panier/" data-i18n="basket.link"></a></li>
-          <li><a href="sources/" data-i18n="sources.link"></a></li>
-          <li><a href="infos-legales/#donnees" data-i18n="updates.link"></a></li>
-          <li><a href="infos-legales/" data-i18n="legal.link"></a></li>
-        </ul>
         <!-- places -->
       </div>
     </aside>
@@ -96,16 +86,18 @@
       <div id="map" class="map" role="region" data-i18n-aria-label="map.label"></div>
 
       <div class="topbar" id="topbar">
-        <a class="brand-chip" href="./" data-i18n-aria-label="app.home"><img src="img/mark.svg" alt="" width="44" height="44">
-        </a>
+        <!-- Phones only: brand, basket and help above the map (the sidebar is not shown). -->
+        <div class="m-head pill">
+          <a class="brand-link" href="./"><img class="brand-mark" src="img/mark.svg" alt="" width="32" height="32"><span class="brand-name" data-i18n="app.name"></span></a>
+          <a class="basket-link" href="panier/" data-basket-link>Panier</a>
+          <span class="grow"></span>
+          <a class="help-q" href="aide/" data-help="help.link">?</a>
+        </div>
         <nav class="pill breadcrumb" data-i18n-aria-label="map.breadcrumb">
           <button type="button" class="crumb" id="crumb-france" data-i18n="map.france"></button><span class="sep" aria-hidden="true">›</span><b id="dep-name"></b>
         </nav>
         <div class="pill counts" id="counts" aria-live="polite"></div>
         <div class="grow"></div>
-        <button type="button" class="pill iconbtn tool-btn" id="search-open" aria-expanded="false" aria-controls="search" data-i18n-aria-label="search.label">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
-        </button>
         <button type="button" class="pill iconbtn tool-btn" id="locate" data-i18n-aria-label="locate.label">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
         </button>
@@ -119,9 +111,6 @@
         <div class="pill zoom">
           <button type="button" class="iconbtn" id="zoom-in" data-i18n-aria-label="map.zoomIn">+</button>
           <button type="button" class="iconbtn" id="zoom-out" data-i18n-aria-label="map.zoomOut">−</button>
-          <button type="button" class="iconbtn" id="zoom-reset" data-i18n-aria-label="map.resetView">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
-          </button>
         </div>
       </div>
 
@@ -152,7 +141,7 @@
         <p data-i18n-html="notice.text"></p>
         <div class="notice-actions">
           <button type="button" class="btn" id="notice-ok" data-i18n="notice.ok"></button>
-          <a href="infos-legales/#conditions" data-i18n="notice.more"></a>
+          <a href="aide/#conditions" data-i18n="notice.more"></a>
         </div>
       </section>
       <div class="status" id="status" role="status"></div>
