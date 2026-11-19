@@ -61,10 +61,15 @@ All four are SIL OFL, self-hosted in `public/fonts/` (Latin subset, ~130 kB tota
 
 - **Label** (`.label`, sidebar `h2`, table heads): Courier Prime 12 px caps, `--ink-2`.
 - **Sheet**: `--paper-2`, 1.5 px ink border (`--line`), optional `--lift`.
-- **Segmented control** (`.mode-switch`, `.segmented`): one ink-bordered box with a 3 px hard offset (it reads
-  as a physical control), ink dividers. Each option starts with a square radio box: empty = available, box
-  with a dot = chosen (shape, not colour alone); the chosen option is also ink with paper text. Hover underlines
-  the option, press nudges it 1 px. Used for *En boutique / En tournée* and *Distance / Communes voisines*.
+- **Switch** (`.mode-toggle`, Nov 2026): *En boutique* [■□] *En tournée*. One button (`role="switch"`), a square
+  track with a square ink knob that slides to the chosen side; the chosen word is ink and underlined, the other
+  `--ink-3` (shape and position, not colour alone). Box with a 3 px hard offset.
+- **Segmented control** (`.segmented`): one ink-bordered box with a 3 px hard offset, ink dividers. Each option
+  starts with a square radio box: empty = available, box with a dot = chosen; the chosen option is also ink with
+  paper text. Used for *Distance / Communes voisines*.
+- **Help "?"** (`.help-q`, `helpLink()`): 24 px square, ink border, Courier "?", 2 px hard offset. A link to a
+  part of `/aide/`, placed next to a title; it replaces every explanatory sentence in the interface.
+- **Basket counter** (`.basket-counter`): five ink-bordered squares, filled per commune of the study, "3 / 5".
 - **Primary button** (`.btn`, `.card-page`, `.pg-button`): ink fill, paper text; hover turns blue.
   Ghost button: transparent with ink border.
 - **Figures grid** (`.kpis`, `.pg-tiles`, `.facts`): a ruled table, label in Courier caps over a large figure.

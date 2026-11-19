@@ -2,8 +2,8 @@
 // commune page (src/commune.js) and, one after the other, in the basket's PDF export (src/panier.js).
 import * as maplibregl from '../../vendor/maplibre-gl-6.11.2/maplibre-gl.mjs';
 import t from '../i18n/fr.js';
-import { BIN_COLOURS, CRIME_HIGH, CRITERIA, WEIGHTS, bin, category, score } from './scoring.js';
-import { fmtCriterion, fmtEuro, fmtInt, fmtPct, fmtSigned, tr } from './format.js';
+import { BIN_COLOURS, CRITERIA, WEIGHTS, bin, category, score } from './scoring.js';
+import { fmtCriterion, fmtEuro, fmtInt, fmtPct, fmtSigned, helpLink, tr } from './format.js';
 import { depPath } from './slug.js';
 import { basketButton } from './basket.js';
 
@@ -15,9 +15,10 @@ const row = (label, value, hint = '') =>
   `<div class="pg-row"><span>${label}${hint ? ` <small>${hint}</small>` : ''}</span><b>${value}</b></div>`;
 const tile = (label, value, sub = '') =>
   `<div class="pg-tile"><span>${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
-const section = (id, title, source, body, wide = false) =>
+/** A block of the sheet; help: anchor on the help page, shown as a "?" next to the title. */
+const section = (id, title, help, body, wide = false) =>
   `<section class="pg-card${wide ? ' is-wide' : ''}" aria-labelledby="${id}">
-    <h2 id="${id}">${title}</h2>${body}</section>`;
+    <h2 id="${id}">${title}${help ? helpLink(help, title) : ''}</h2>${body}</section>`;
 const bar = (label, value, share, text) =>
   `<div class="pg-bar"><span>${label}</span><div class="pg-bar-track"><i style="width:${Math.max(0, Math.min(100, share))}%"></i></div><b>${text ?? value}</b></div>`;
 
@@ -44,7 +45,6 @@ function summary(p) {
   return `${text}.`;
 }
 
-const SMALL_COMMUNE_NOTE_BELOW = 2000; // reliability < 0.8 (pipeline/config.py SMALL_COMMUNE_K = 500)
 
 function why(p) {
   const rows = CRITERIA.filter((c) => c.weighted)
@@ -75,19 +75,12 @@ function why(p) {
       </div>`;
     })
     .join('');
-  const small = p.pop < SMALL_COMMUNE_NOTE_BELOW ? `<p class="pg-why-note">${tr('page.why.small', { pop: fmtInt(p.pop) })}</p>` : '';
-  return rows + small;
+  return rows;
 }
 
-/** Section title with the score, and a "?" button that opens the explanation of the calculation. */
-function whyTitle(s, idp) {
-  return `<span class="pg-why-title">${t['page.why']}${s == null ? '' : ` <span class="pg-why-score">${tr('page.why.score', { s })}</span>`}
-    <button type="button" class="info-btn" aria-expanded="false" aria-controls="${idp}why-info" aria-label="${t['page.why.info']}">?</button></span>`;
-}
-
-function whyInfo(idp) {
-  const items = t['page.why.infoBody'].map((x) => `<li>${x}</li>`).join('');
-  return `<div class="info-pop" id="${idp}why-info" hidden><ul>${items}</ul><a href="sources/#how-title">${t['page.why.method']} →</a></div>`;
+/** Section title with the score. */
+function whyTitle(s) {
+  return `<span class="pg-why-title">${t['page.why']}${s == null ? '' : ` <span class="pg-why-score">${tr('page.why.score', { s })}</span>`}</span>`;
 }
 
 /**
@@ -122,23 +115,6 @@ export function stickyHead(root) {
   if (top && 'ResizeObserver' in window) new ResizeObserver(measure).observe(top);
   measure();
   addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(update); } }, { passive: true });
-}
-
-function wireInfo(root) {
-  const btn = root.querySelector('.info-btn');
-  const pop = root.querySelector('.info-pop');
-  if (!btn || !pop) return;
-  const set = (open) => {
-    btn.setAttribute('aria-expanded', String(open));
-    pop.hidden = !open;
-  };
-  btn.addEventListener('click', () => set(pop.hidden));
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !pop.hidden) {
-      set(false);
-      btn.focus();
-    }
-  });
 }
 
 function historyChart(history) {
@@ -267,7 +243,7 @@ function competition(p, fonds, depName) {
     ${row(t['card.takeovers'], fmtInt(h.takeovers))}
     ${row(t['card.openings'], fmtInt(h.openings))}
     ${row(t['card.closures'], fmtInt(h.closures))}
-    ${row(t['page.sireneBakeries'], fmtInt(p.businesses.sirene_bakeries + p.businesses.sirene_pastry), t['page.sireneBakeries.hint'])}
+    ${row(t['page.sireneBakeries'], fmtInt(p.businesses.sirene_bakeries + p.businesses.sirene_pastry))}
     <div class="pg-row pg-price"><span>${t['card.fonds']}<small>${priceHint}</small></span><b>${fmtEuro(prices.median)}</b></div>
     <h3>${t['page.nearby']}</h3>
     <div class="pg-table-wrap"><table class="pg-table">
@@ -286,7 +262,7 @@ function economy(p) {
     ? b.main_employers.map((e) => row(esc(e.name), tr('card.employees', { n: e.employees }))).join('')
     : `<p class="pg-muted">${t['card.noMainEmployer']}</p>`;
   return `${row(t['card.establishments'], fmtInt(b.total))}
-    ${row(t['card.foodShops'], fmtInt(a.small_grocers + a.butchers + a.fishmongers), t['card.foodShops.hint'])}
+    ${row(t['card.foodShops'], fmtInt(a.small_grocers + a.butchers + a.fishmongers))}
     ${row(t['card.supermarkets'], fmtInt(a.supermarkets))}
     ${row(t['card.cafesRestaurants'], fmtInt(b.cafes + a.restaurants))}
     <h3>${t['page.sectors']}</h3>
@@ -322,7 +298,6 @@ function safetyServices(p) {
       crime.v == null ? t['card.notPublished'] : `${fmtCriterion('crime', crime.v)} ‰`,
       crime.pct == null ? t['card.crime.sub'] : tr('page.crimeRank', { p: Math.round(crime.pct / 10) }),
     )}</div>
-    ${crime.v >= CRIME_HIGH ? `<p class="pg-why-note">${t['page.crimeHigh']}</p>` : ''}
     <h3>${t['page.services']}</h3>${svc}${row(t['svc.market'], t['page.market.none'])}`;
 }
 
@@ -446,13 +421,13 @@ function breadRow(b) {
 }
 
 /** Tap water hardness of the commune (median of the networks serving it). */
-function water(p, year) {
+function water(p) {
   const w = p.water;
   const dec = (x) => x.toFixed(1).replace('.', ',');
   const label = w ? `${t['page.water']}, ${t[`page.water.${w.class}`]}` : t['page.water'];
   const value = w ? `${dec(w.th)} °f` : t['page.water.none'];
   const range = w && w.max - w.min >= 5 ? `<p class="pg-muted small">${tr('page.water.range', { min: dec(w.min), max: dec(w.max) })}</p>` : '';
-  return `<div class="pg-water">${row(label, value, tr('page.water.hint', { year: w?.year ?? year }))}${range}</div>`;
+  return `<div class="pg-water">${row(label, value)}${range}</div>`;
 }
 
 /** Points of sale in the commune first, then the others within 5 km; nearest first in each group. */
@@ -585,7 +560,6 @@ export function communeHTML(p, meta, fonds, { idp = '', actions = true, inBasket
         <span class="swatch ${cat === 'avoid' ? 'is-hatched' : ''}" style="background:${BIN_COLOURS[bin(s)]}"></span>
         <b>${s ?? '–'}</b><span>${s == null ? t['cat.unknown'] : tr('card.outOf', { cat: t[`cat.${cat}`] })}</span>
       </div>
-      <p class="pg-muted small pg-score-help">${t['page.scoreHelp']}</p>
     </div>
     <div class="pg-hero">
       <div class="pg-hero-text">
@@ -614,26 +588,24 @@ export function communeHTML(p, meta, fonds, { idp = '', actions = true, inBasket
       </figure>
     </div>
     <div class="pg-grid">
-      ${section(`${idp}why`, whyTitle(s, idp), '', whyInfo(idp) + why(p))}
-      ${section(`${idp}demo`, t['card.demography'], tr('card.src.census', { year: y.census }),
+      ${section(`${idp}why`, whyTitle(s), 'note', why(p))}
+      ${section(`${idp}demo`, t['card.demography'], 'recensement',
         `<h3>${tr('page.history', { first })}</h3>${historyChart(p.history)}
          ${firstPop ? row(tr('page.change', { first }), fmtSigned((100 * (p.history.at(-1)[1] - firstPop)) / firstPop)) : ''}
          ${pyramid(p)}`)}
-      ${section(`${idp}comp`, t['page.competition'], tr('card.src.market', { sirene: sireneMonth }) + ' · ' + tr('card.src.bpe', { year: y.bpe }), competition(p, fonds, p.dep_name))}
-      ${section(`${idp}eco`, t['card.economy'], tr('card.src.economy', { sirene: sireneMonth, bpe: y.bpe, census: y.census }), economy(p))}
-      ${section(`${idp}inc`, t['page.incomeHousing'], `Insee Filosofi ${y.income} · ${tr('card.src.census', { year: y.census })}`, incomeHousing(p, p.dep_name))}
-      ${section(`${idp}safe`, t['page.safetyServices'], `SSMSI ${y.crime} · ${tr('card.src.bpe', { year: y.bpe })}`, safetyServices(p))}
-      ${section(`${idp}pol`, t['card.politics'], tr('card.src.politics', { year: y.election }), politics(p.politics, y.election))}
-      ${section(`${idp}bread`, t['page.bread'], tr('page.bread.src', { sirene: sireneMonth }),
+      ${section(`${idp}comp`, t['page.competition'], 'boulangeries-comptees', competition(p, fonds, p.dep_name))}
+      ${section(`${idp}eco`, t['card.economy'], 'employeurs', economy(p))}
+      ${section(`${idp}inc`, t['page.incomeHousing'], 'revenu', incomeHousing(p, p.dep_name))}
+      ${section(`${idp}safe`, t['page.safetyServices'], 'delinquance', safetyServices(p))}
+      ${section(`${idp}pol`, t['card.politics'], 'politique', politics(p.politics, y.election))}
+      ${section(`${idp}bread`, t['page.bread'], 'points-de-vente',
         `<div class="pg-bread"><div class="pg-bread-map" id="${idp}bread-map" role="img" aria-label="${esc(t['page.bread'])}"></div>
-          <div>${water(p, y.water)}<div class="pg-legend">${Object.entries(KIND_COLOURS).map(([k, c]) => `<span><i style="background:${c}"></i>${t[`page.bread.${k}`]}</span>`).join('')}
+          <div>${water(p)}<div class="pg-legend">${Object.entries(KIND_COLOURS).map(([k, c]) => `<span><i style="background:${c}"></i>${t[`page.bread.${k}`]}</span>`).join('')}
             <span><i class="is-pin"></i>${t['page.bread.townHall']}</span></div>${breadList(p)}
-          <p class="pg-muted small pg-bread-note">${t['page.bread.note']}</p>
-          <p class="pg-muted small">${t['page.hyg.note']}</p>
-          <p class="pg-muted small">${t['page.water.note']}</p></div></div>`, true)}
+          </div></div>`, true)}
     </div>
-    <p class="pg-sources">${tr('page.sources', { census: y.census, income: y.income, bpe: y.bpe, sirene: sireneMonth, crime: y.crime, election: y.election, water: y.water })}<a href="sources/">${t['sources.link']}</a></p>
-    <div class="callout pg-disclaimer"><p>${tr('page.disclaimer', { built: new Date(meta.built_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) })}</p></div>`;
+    <p class="pg-sources">${tr('page.built', { built: new Date(meta.built_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) })} ${tr('page.sources', { census: y.census, income: y.income, bpe: y.bpe, sirene: sireneMonth, crime: y.crime, election: y.election, water: y.water })}<a href="aide/#liste">${t['help.link']}</a></p>
+`;
 }
 
 // ---------- maps frozen for printing ----------
@@ -701,7 +673,6 @@ export async function wireCommune(root, p, { print = false } = {}) {
   if (!print) {
     locator(locEl, p).catch(() => {});
     if (breadEl) breadMap(breadEl, p);
-    wireInfo(root);
     root.querySelectorAll('.pg-chart-wrap').forEach(wireChart);
     return;
   }

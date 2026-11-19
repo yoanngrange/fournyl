@@ -101,15 +101,13 @@ export function createSidebar(root, { getState, setFilter, resetFilters, pick })
   }
   root.querySelector('#reset').addEventListener('click', resetFilters);
 
-  const help = root.querySelector('#filters-help');
   const top = root.querySelector('#top-list');
   const topTitleEl = root.querySelector('#top-title');
 
   return {
     /** ranges: visible min/max per criterion; topItems: [{id, name, value, colour}] (communes or départements) */
-    update({ ranges, inView, topTitle, topItems, topEmpty }) {
+    update({ ranges, topTitle, topItems, topEmpty }) {
       const { filters } = getState();
-      help.textContent = tr('filters.help', { n: inView.toLocaleString('fr-FR') });
       for (const c of CRITERIA) {
         const r = rows.get(c.key);
         const range = ranges[c.key];

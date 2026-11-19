@@ -15,7 +15,7 @@ The 8th-of-the-month run exists because Insee published the November 2026 Sirene
 the 3rd failed ("No resource matching … on data.gouv.fr"). A failed build never breaks the site: Pages keeps
 serving the previous deploy.
 
-The public page `/infos-legales/#donnees` shows the last build, the next one, and each source's vintage,
+The public page `/aide/#sources` shows the last build, the next one, and each source's vintage,
 publication and download dates (from `data/meta.json`). It warns visitors when the data is older than 40 days.
 
 ## Settings (GitHub > fournyl > Settings > Secrets and variables > Actions)

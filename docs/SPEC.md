@@ -130,19 +130,37 @@ Pages artifact and **never committed** to git (a monthly refresh would otherwise
 | France (map) | `/` |
 | Département (map centred on it) | `/loire-atlantique/` |
 | Commune page | `/loire-atlantique/clisson-44043/` |
-| Sources & method | `/sources/` |
-| Infos légales (terms and data limits, legal notice, privacy, data updates) | `/infos-legales/` (anchors `#conditions`, `#mentions`, `#confidentialite`, `#donnees`) |
+| Help: method, sources and updates, terms, legal notice, privacy (Nov 2026) | `/aide/` (anchors `#methode`, `#sources`, `#conditions`, `#mentions`, `#confidentialite`, one per explanation, e.g. `#eau`) |
+| Basket (market study export) | `/panier/` |
+`/sources/` and `/infos-legales/` (until Nov 2026) are small redirect pages to `/aide/`.
 Slug = lower case, accents removed, anything else → `-` (`pipeline/pages.py` and `src/lib/slug.js`, kept identical
 by a test). The INSEE code is what the site reads; a wrong or old slug, or `/commune/<code>`, is redirected by
 `404.html`. The map keeps its state in the query string and `#carte=zoom/lat/lon`; the path follows the
 département at the centre of the map. Pages are generated at build time (`scripts/build_site.sh`), with
 `sitemap.xml` and `robots.txt`; never committed.
 
+**Interface copy (Nov 2026):** no explanatory sentences on screens; a "?" links to `/aide/`.
+**Ranking:** France view, top 5 départements by number of favourable communes passing the filters; département
+view, top 5 communes on screen passing the filters. Not shown on phones.
+**Phones (Nov 2026):** map only. Top band: logo + "Fournyl", Panier, "?", locate; the shop / round switch below.
+No search, no sliders, no ranking (filters from a shared link are dropped). In round mode a bottom sheet holds the
+delivery settings. Tapping a commune opens one bubble next to it (name, score, "Voir la fiche complète", basket);
+no hover tooltip. Commune page: no photo; name and score stay pinned under the sticky top band.
+**Crime slider:** stops at 100 per 1,000 inhabitants (or the 99th percentile on screen if lower); the open end
+("100 et +") keeps outliers such as Roissy-en-France (≈ 990).
+**Basket (Nov 2026):** one market study of 1 to 5 communes, exported in one PDF: a comparison grid (one column
+per commune), then every detailed figure of each commune. A counter shows "n / 5" and the single price
+(1 € for 1 to 5 communes); free during the launch, no payment yet. A sixth commune is refused with a notice.
+
 **Map card (Oct 25, 2026):** only score, inhabitants, bakeries, inhabitants per bakery, median income, and a link
 "Voir la fiche complète". Everything else lives on the commune page (§3.4).
 
-### 3.5 Sources & method page (route `/sources/`)
-One page, linked from the sidebar, every card and the commune page footer. In French, plain language.
+### 3.5 Help page (route `/aide/`, Nov 2026; replaced `/sources/` and `/infos-legales/`)
+One page with a sticky table of contents on the left (sections and subsections; a collapsible bar on phones):
+Méthode (how the score works, criteria and choices, biases and limits) · Sources et mises à jour (calendar,
+one table of sources with vintage, publication, download and rhythm, checks of the last build) · Conditions
+d'utilisation · Mentions légales · Confidentialité. Every "?" in the interface links to one anchor of it.
+In French, plain language.
 - **Sources:** for each dataset, name, producer, vintage, licence, link, what we use it for (from `meta.json`).
 - **Choices:** every scoring rule and why — national percentiles, weights, the no-bakery rule, the bakery count
   source (BPE), the growth definition, the crime indicators, the "likely to sell" signal and its privacy rule.

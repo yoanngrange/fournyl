@@ -218,6 +218,7 @@ export function createMap({ container, communes, departements, france, loadGeo, 
   // Start downloading while the map is still zooming or panning, not only once it stops.
   let moveTimer = null;
   map.on('move', () => {
+    on.moving?.();
     if (moveTimer) return;
     moveTimer = setTimeout(() => {
       moveTimer = null;
@@ -330,6 +331,8 @@ export function createMap({ container, communes, departements, france, loadGeo, 
   let selected = null;
   let pin = null;
   return {
+    /** Screen position of a longitude/latitude, in pixels from the top left of the map. */
+    project: (lon, lat) => map.project([lon, lat]),
     /** Delivery mode: bakehouse pin and, in distance mode, the dashed range circle. */
     setDelivery(base, radiusKm) {
       pin?.remove();

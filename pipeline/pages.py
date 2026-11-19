@@ -61,9 +61,10 @@ def analytics_tag(token: str | None = None) -> str:
 
 
 # Text pages copied from public/ that carry the <!-- analytics --> marker.
-STATIC_PAGES = ["index.html", "sources/index.html", "infos-legales/index.html", "panier/index.html"]
+STATIC_PAGES = ["index.html", "aide/index.html", "panier/index.html"]
+# Former addresses /sources/ and /infos-legales/ are small redirect pages to /aide/ (public/).
 # Footer links (mirror of LINKS in src/lib/chrome.js): href, fr.js key.
-FOOTER_LINKS = [("panier/", "basket.link"), ("sources/", "sources.link"), ("infos-legales/#donnees", "updates.link"), ("infos-legales/", "legal.link")]
+FOOTER_LINKS = [("panier/", "basket.link"), ("aide/", "help.link")]
 
 
 def _fill(template: str, **params) -> str:
@@ -300,7 +301,7 @@ class Site:
 """
 
     def sitemap(self) -> str:
-        urls = [SITE_URL, SITE_URL + "sources/", SITE_URL + "infos-legales/"]
+        urls = [SITE_URL, SITE_URL + "aide/"]
         urls += [SITE_URL + dep_path(self.dep_names[d]) for d in sorted(self.exported)]
         urls += [
             SITE_URL + commune_path(self.dep_names[c["dep"]], c["name"], code)
@@ -334,8 +335,7 @@ published by the association Vraie Forêt (Nantes, France).
 
 - [Map of France]({SITE_URL}): every commune coloured by score, filters, and an "En tournée" mode for a
   bakehouse delivering several villages.
-- [Sources and method]({SITE_URL}sources/): data sources, years, how the score is computed, limits.
-- [Legal information]({SITE_URL}infos-legales/): publisher, data licences, privacy, update schedule.
+- [Help]({SITE_URL}aide/): how the score is computed, data sources and update schedule, limits, terms, legal notice, privacy.
 - [Sitemap]({SITE_URL}sitemap.xml): one page per commune, for example
   {SITE_URL}loire-atlantique/clisson-44043/ (population, bakeries and competition within 5 and 10 km,
   takeovers, price of bakery businesses, demography, local economy).
@@ -377,7 +377,7 @@ published by the association Vraie Forêt (Nantes, France).
                 page = f.read_text(encoding="utf-8").replace("<!-- analytics -->", analytics_tag())
                 if rel == "index.html":
                     page = self.home_page(page)
-                elif rel in ("sources/index.html", "infos-legales/index.html"):
+                elif rel == "aide/index.html":
                     url = SITE_URL + rel.removesuffix("index.html")
                     page = page.replace("</head>", f'  <link rel="canonical" href="{url}">\n</head>', 1)
                 f.write_text(page, encoding="utf-8")
