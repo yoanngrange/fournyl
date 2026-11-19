@@ -14,6 +14,7 @@ MANIFEST = RAW / "manifest.json"
 USER_AGENT = "Mozilla/5.0 (fournyl data pipeline)"
 RETRIES = 8
 RETRY_WAIT_S = 10
+FORMAT_RETRIES = 3  # whole downloads restarted when the file is cut or not what was expected
 
 
 def _get(url: str, headers: dict | None = None):
@@ -125,9 +126,18 @@ def fetch(source_id: str, refresh: bool = False) -> dict:
     target = RAW / f"{source_id}{suffix}"
     RAW.mkdir(parents=True, exist_ok=True)
     tmp = target.with_suffix(target.suffix + ".part")
-    print(f"  downloading {source_id} …", flush=True)
-    _download(url, tmp)
-    _check_format(tmp, suffix)  # an error page served with status 200 must not reach the cache
+    for attempt in range(1, FORMAT_RETRIES + 1):
+        print(f"  downloading {source_id} …", flush=True)
+        tmp.unlink(missing_ok=True)
+        try:
+            _download(url, tmp)
+            _check_format(tmp, suffix)  # an error page served with status 200 must not reach the cache
+            break
+        except (ValueError, RuntimeError, OSError) as err:  # cut transfer (no length announced), error page…
+            print(f"    attempt {attempt}: {err}", flush=True)
+            if attempt == FORMAT_RETRIES:
+                raise
+            time.sleep(RETRY_WAIT_S)
     tmp.replace(target)
     print(f"    {target.stat().st_size / 1e6:.1f} MB", flush=True)
 
@@ -150,7 +160,22 @@ def _record(source_id: str, target, url: str, resolved: dict) -> dict:
 
 
 def fetch_all(refresh: bool = False) -> dict:
-    return {sid: fetch(sid, refresh) for sid in SOURCES}
+    """Every source; an optional one (enrichment) that cannot be downloaded is skipped with a warning."""
+    out = {}
+    for sid, spec in SOURCES.items():
+        try:
+            out[sid] = fetch(sid, refresh)
+        except Exception as err:  # noqa: BLE001 - any failure of an optional source must not stop the build
+            if not spec.get("optional"):
+                raise
+            print(f"  WARNING: {sid} unavailable, built without it ({err})", flush=True)
+    return out
+
+
+def available(source_id: str) -> bool:
+    """True when the source was downloaded (optional sources may be missing)."""
+    entry = load_manifest().get(source_id)
+    return bool(entry) and (RAW / entry["file"]).exists()
 
 
 def path(source_id: str):

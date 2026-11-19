@@ -30,6 +30,8 @@ def _member(z: zipfile.ZipFile, prefix: str):
 
 def risks(codes: set[str]) -> dict:
     """{code: {"known": [labels], "catnat": {"since", "total", "recent", "by_kind": {kind: n}}}}."""
+    if not fetch.available("gaspar"):
+        return {}
     mapping = cog.code_mapping()
     with zipfile.ZipFile(fetch.path("gaspar")) as z:
         c = pd.read_csv(_member(z, "catnat_gaspar"), sep=";", dtype=str, usecols=["code_commune", "num_risque_jo", "date_debut"])

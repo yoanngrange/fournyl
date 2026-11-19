@@ -205,6 +205,7 @@ SOURCES = {
             "title_startswith": f"dis-{WATER_YEAR}.zip",
             "format": "zip",
         },
+        "optional": True,  # enrichment: the site is built without it if the download fails
         "licence": "Licence Ouverte 2.0",
         "page": "https://www.data.gouv.fr/datasets/resultats-du-controle-sanitaire-de-leau-distribuee-commune-par-commune",
     },
@@ -215,6 +216,7 @@ SOURCES = {
         "url": "https://dgal.opendatasoft.com/api/explore/v2.1/catalog/datasets/export_alimconfiance/exports/csv"
         "?delimiter=%3B&select=siret%2Cdate_inspection%2Capp_code_synthese_eval_sanit",
         "suffix": ".csv",
+        "optional": True,  # enrichment: the site is built without it if the download fails
         "licence": "Licence Ouverte 2.0",
         "page": "https://alimconfiance.agriculture.gouv.fr/",
     },
@@ -222,9 +224,13 @@ SOURCES = {
         "name": "Ratios financiers (comptes annuels déposés au RNCS)",
         "producer": "INPI, ministères économiques et financiers",
         "vintage": "comptes publiés",
+        # Accounts closed since 2021 with a revenue: the latest one is all a page shows (41 MB instead of 137 MB).
+        # The export is generated on the fly (~10 min) and sometimes cut: optional, retried.
         "url": "https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/ratios_inpi_bce/exports/parquet"
-        "?select=siren,date_cloture_exercice,chiffre_d_affaires,resultat_net,confidentiality",
+        "?select=siren,date_cloture_exercice,chiffre_d_affaires,resultat_net,confidentiality"
+        "&where=date_cloture_exercice%3E%3Ddate%272021-01-01%27%20and%20chiffre_d_affaires%3E0",
         "suffix": ".parquet",
+        "optional": True,
         "licence": "Licence Ouverte 2.0",
         "page": "https://www.data.gouv.fr/datasets/ratios-financiers-bce-inpi",
     },
@@ -233,6 +239,7 @@ SOURCES = {
         "producer": "OpenStreetMap France (GéoDataMine)",
         "vintage": "export quotidien",
         "url": "https://geodatamine.fr/dump/shop_craft_office_csv.zip",
+        "optional": True,  # enrichment: the site is built without it if the download fails
         "licence": "ODbL 1.0 (© contributeurs OpenStreetMap)",
         "page": "https://www.data.gouv.fr/datasets/base-nationale-des-commerces-ouverte",
     },
@@ -242,6 +249,7 @@ SOURCES = {
         "vintage": "export quotidien",
         "datagouv": {"dataset": "60a528e8b656ce01b4c0c0a6", "title_startswith": "acceslibre.csv", "format": "csv"},
         "suffix": ".csv",
+        "optional": True,  # enrichment: the site is built without it if the download fails
         "licence": "Licence Ouverte 2.0",
         "page": "https://acceslibre.beta.gouv.fr/",
     },
@@ -250,6 +258,7 @@ SOURCES = {
         "producer": "Ministère de la Transition écologique (Géorisques)",
         "vintage": "mise à jour mensuelle",
         "url": "https://files.georisques.fr/GASPAR/gaspar.zip",
+        "optional": True,  # enrichment: the site is built without it if the download fails
         "licence": "Licence Ouverte",
         "page": "https://www.georisques.gouv.fr/donnees/bases-de-donnees/base-gaspar",
     },
@@ -258,6 +267,7 @@ SOURCES = {
         "producer": "Insee",
         "vintage": "2025",
         "url": "https://www.insee.fr/fr/statistiques/fichier/8217525/BPE25.parquet",
+        "optional": True,  # enrichment: the site is built without it if the download fails
         "licence": "Licence Ouverte 2.0",
         "page": "https://www.insee.fr/fr/statistiques/8217525",
     },

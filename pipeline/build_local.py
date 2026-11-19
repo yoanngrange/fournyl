@@ -183,6 +183,8 @@ def hygiene() -> pd.DataFrame:
     The ministry publishes each result for one year after the inspection. When one establishment was
     inspected twice on its latest date (several activities), the worse level is kept.
     """
+    if not fetch.available("alimconfiance"):
+        return pd.DataFrame(columns=["level", "date"]).rename_axis("siret")
     a = pd.read_csv(fetch.path("alimconfiance"), sep=";", dtype=str, encoding="utf-8-sig")
     a.columns = ["siret", "date", "level"]
     a["level"] = pd.to_numeric(a.level, errors="coerce")
