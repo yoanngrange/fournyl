@@ -46,7 +46,7 @@ function compareTable(compared, { links = true } = {}) {
       .join('');
     return `<tr><th scope="row">${t[key]}</th>${cells}</tr>`;
   }).join('');
-  return `<div class="table-wrap"><table class="sel-table">
+  return `<div class="table-wrap"><table class="sel-table stack-rows" style="--cols:${compared.length}">
     <thead><tr><th scope="col"><span class="visually-hidden">${t['basket.criterion']}</span></th>${head}</tr></thead>
     <tbody>${body}</tbody></table></div>`;
 }
