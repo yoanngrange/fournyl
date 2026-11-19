@@ -118,8 +118,38 @@ def test_commune_pages_exist(index):
         assert (OUT / "commune" / f"{code}.json").exists()
 
 
+def test_bakery_pages(index):
+    """One record per bakery / pastry shop (a sole trader is never named by company: see build_local.bread_points)."""
+    shops = [b for code in index["code"] if (OUT / "bakery" / f"{code}.json").exists() for b in load(f"bakery/{code}.json")]
+    if not any(c.startswith("44") for c in index["code"]):
+        pytest.skip("dep 44 not built")
+    assert len(shops) > 500 and len({b["id"] for b in shops}) == len(shops)
+    for b in shops:
+        assert b["kind"] in {"bakery", "pastry"} and b["address"]
+        assert len(b["near"]) <= 8 and all(n["m"] <= 2000 for n in b["near"])
+        assert all((n["path"] is None) or n["path"].endswith("/") for n in b["near"])
+        if b["accounts"]:
+            assert b["accounts"]["revenue"] > 0 and len(b["accounts"]["closed"]) == 7
+    assert sum(bool(b["accounts"]) for b in shops) >= 0.05 * len(shops)
+    # Enrichments: OpenStreetMap (hours, contact), Accès Libre, location history, nearby facilities.
+    assert sum(bool(b["osm"]) for b in shops) >= 0.2 * len(shops)
+    assert sum(bool(b["access"]) for b in shops) >= 0.1 * len(shops)
+    assert sum(bool(b["history"]) for b in shops) >= 0.2 * len(shops)
+    for b in shops:
+        assert set(b["footfall"]) == {"schools", "secondary", "stations", "supermarkets", "pharmacies", "doctors", "post"}
+        for h in b["history"]:
+            assert h["to"] >= (h["from"] or 0) and h["kind"] in {"bakery", "pastry", "bake_off", "retail"}
+
+
+def test_commune_risks(index):
+    for code in index["code"]:
+        r = load(f"commune/{code}.json")["risks"]
+        assert r is not None and r["catnat"]["total"] >= r["catnat"]["recent"] >= 0
+        assert sum(r["catnat"]["by_kind"].values()) == r["catnat"]["total"]
+
+
 def test_privacy_no_individual_data():
-    """CLAUDE.md: only aggregates per commune; never a SIRET, a person or a birth year."""
+    """CLAUDE.md: never a SIRET, a director, a person's birth year (bakery pages use their own id)."""
     siret = re.compile(r"\b\d{14}\b")
     forbidden_keys = re.compile(r'"[^"]*(siret|birth|naissance|dirigeant|director)[^"]*"\s*:')
     for path in OUT.rglob("*.json"):
@@ -195,7 +225,8 @@ def test_bread_points(index):
         assert len(pts) <= 300
         assert [p["km"] for p in pts] == sorted(p["km"] for p in pts)
         for p in pts:
-            assert set(p) == {"lat", "lon", "km", "kind", "name", "year", "here", "hyg", "hyg_date"}
+            assert set(p) == {"lat", "lon", "km", "kind", "name", "year", "here", "hyg", "hyg_date", "id"}
+            assert (p["id"] is not None) == (p["kind"] in {"bakery", "pastry"})
             assert p["hyg"] in {None, 1, 2, 3, 4}
             assert (p["hyg"] is None) == (p["hyg_date"] is None)
             assert p["hyg_date"] is None or re.fullmatch(r"20\d\d-[01]\d", p["hyg_date"])

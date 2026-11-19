@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="{{base}}">
+  <title>{{title}}</title>
+  <meta name="description" content="{{description}}">
+  <link rel="canonical" href="{{canonical}}">
+  <meta name="fournyl-commune" content="{{code}}">
+  <meta name="fournyl-bakery" content="{{id}}">
+  <meta name="theme-color" content="#FF0000">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="img/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="preload" href="fonts/atkinson-hyperlegible-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/big-shoulders-display-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/coustard-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="vendor/maplibre-gl-6.11.2/maplibre-gl.css">
+  <link rel="stylesheet" href="src/styles.css">
+  <script type="module" src="src/boulangerie.js"></script>
+  {{seo}}
+  {{analytics}}
+</head>
+<body class="page">
+  <header class="page-top">
+    <a class="page-brand" href="./"><img src="img/mark.svg" alt="" width="32" height="32">Fournyl</a>
+    <nav class="page-crumbs" aria-label="{{t_breadcrumb}}">
+      <a href="./">{{t_france}}</a><span aria-hidden="true">›</span><a href="{{dep_path}}">{{dep_name}}</a><span aria-hidden="true">›</span><a href="{{commune_path}}">{{commune}}</a><span aria-hidden="true">›</span><span aria-current="page">{{name}}</span>
+    </nav>
+    <a class="basket-link" href="panier/" data-basket-link>Panier</a>
+    <a class="help-q" href="aide/" aria-label="Aide et mentions légales" title="Aide et mentions légales">?</a>
+  </header>
+  <main class="page-main" id="page">
+    <h1 class="page-title">{{name}}</h1>
+    <p class="page-lead">{{description}}</p>
+  </main>
+  {{footer}}
+</body>
+</html>

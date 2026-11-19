@@ -218,6 +218,49 @@ SOURCES = {
         "licence": "Licence Ouverte 2.0",
         "page": "https://alimconfiance.agriculture.gouv.fr/",
     },
+    "ratios_inpi": {
+        "name": "Ratios financiers (comptes annuels déposés au RNCS)",
+        "producer": "INPI, ministères économiques et financiers",
+        "vintage": "comptes publiés",
+        "url": "https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/ratios_inpi_bce/exports/parquet"
+        "?select=siren,date_cloture_exercice,chiffre_d_affaires,resultat_net,confidentiality",
+        "suffix": ".parquet",
+        "licence": "Licence Ouverte 2.0",
+        "page": "https://www.data.gouv.fr/datasets/ratios-financiers-bce-inpi",
+    },
+    "banco": {
+        "name": "BANCO — commerces de France (OpenStreetMap) : horaires, site, téléphone, accès fauteuil",
+        "producer": "OpenStreetMap France (GéoDataMine)",
+        "vintage": "export quotidien",
+        "url": "https://geodatamine.fr/dump/shop_craft_office_csv.zip",
+        "licence": "ODbL 1.0 (© contributeurs OpenStreetMap)",
+        "page": "https://www.data.gouv.fr/datasets/base-nationale-des-commerces-ouverte",
+    },
+    "acceslibre": {
+        "name": "Accès Libre — accessibilité des établissements recevant du public",
+        "producer": "Ministère de la Transition écologique (Accès Libre)",
+        "vintage": "export quotidien",
+        "datagouv": {"dataset": "60a528e8b656ce01b4c0c0a6", "title_startswith": "acceslibre.csv", "format": "csv"},
+        "suffix": ".csv",
+        "licence": "Licence Ouverte 2.0",
+        "page": "https://acceslibre.beta.gouv.fr/",
+    },
+    "gaspar": {
+        "name": "GASPAR — risques connus et arrêtés de catastrophe naturelle par commune",
+        "producer": "Ministère de la Transition écologique (Géorisques)",
+        "vintage": "mise à jour mensuelle",
+        "url": "https://files.georisques.fr/GASPAR/gaspar.zip",
+        "licence": "Licence Ouverte",
+        "page": "https://www.georisques.gouv.fr/donnees/bases-de-donnees/base-gaspar",
+    },
+    "bpe_xy": {
+        "name": "Base permanente des équipements — équipements géolocalisés",
+        "producer": "Insee",
+        "vintage": "2025",
+        "url": "https://www.insee.fr/fr/statistiques/fichier/8217525/BPE25.parquet",
+        "licence": "Licence Ouverte 2.0",
+        "page": "https://www.insee.fr/fr/statistiques/8217525",
+    },
     "sirene": {
         "name": "Base Sirene des établissements",
         "producer": "Insee",
@@ -298,3 +341,20 @@ def in_scope(dep_code: str) -> bool:
 WATER_PARAM = "TH"  # titre hydrotimétrique, in degrés français (°f)
 # Hardness classes in °f (upper bounds), the scale used by water utilities and the CIEau.
 WATER_CLASSES = [(7, "very_soft"), (15, "soft"), (25, "medium"), (35, "hard"), (float("inf"), "very_hard")]
+
+# --- One page per bakery (SIRENE 10.71C and 10.71D) ---
+BAKERY_PAGE_KINDS = {"10.71C": "bakery", "10.71D": "pastry"}
+BAKERY_NEAR_M = 2_000  # competitors listed on a bakery page: other points of sale of bread within this distance
+BAKERY_NEAR_MAX = 8
+HISTORY_NEAR_M = 15  # a closed point of sale of bread this close to a shop stood at the same place
+FOOTFALL_M = 500  # facilities that bring passers-by, counted around a bakery
+FOOTFALL = {  # BPE 2025 facility codes
+    "schools": ["C107", "C108", "C109"],  # écoles maternelles, primaires, élémentaires
+    "secondary": ["C201", "C301", "C302", "C303"],  # collèges, lycées
+    "stations": ["E107", "E108", "E109"],  # gares
+    "supermarkets": ["B104", "B105"],  # hypermarchés, supermarchés
+    "pharmacies": ["D307"],
+    "doctors": ["D265"],
+    "post": ["A206", "A207", "A208"],
+}
+OSM_MATCH_M = 40  # an OpenStreetMap / Accès Libre shop this close to a SIRENE bakery (same commune) is the same shop
