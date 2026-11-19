@@ -156,6 +156,17 @@ no hover tooltip. Commune page: no photo; name and score stay pinned under the s
 **Basket (Nov 2026):** one market study of 1 to 5 communes, exported in one PDF: a comparison grid (one column
 per commune), then every detailed figure of each commune. A counter shows "n / 5" and the single price
 (1 € for 1 to 5 communes); free during the launch, no payment yet. A sixth commune is refused with a notice.
+**Market study PDF (Nov 19, 2026):** with 2 to 5 communes, one landscape document confronting them theme by theme
+(`src/lib/compare-view.js`): one table per theme, one column per commune, header repeated on each page, the most
+favourable value of a row flagged "meilleur", a bar scaled on the row under every figure. Themes: summary, why this
+score (ranks), location maps side by side, demography (population indexed to 100 on one chart, one line style per
+commune; age bands), bakeries and competition, points of sale of bread (maps side by side, counts by kind, hygiene,
+tap water), local economy, income and housing, safety and services, politics. With one commune, its full sheet.
+**Values in words** ("aucune", "non diffusé") are set smaller than figures and stay on one line; figure grids are
+`<dl>` lists (label `dt`, value and note `dd`).
+**Elections:** a single list always has 100 % of valid votes, so for it the page shows "liste unique" and its share
+of registered voters, plus the blank and null ballots (% of voters) for every round. Market days are not shown at
+all until an open source exists (see PLAN.md).
 
 **Map card (Oct 25, 2026):** only score, inhabitants, bakeries, inhabitants per bakery, median income, and a link
 "Voir la fiche complète". Everything else lives on the commune page (§3.4).

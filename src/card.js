@@ -1,6 +1,6 @@
 // Pinned commune card on the map: score and the four key figures, then a link to the full commune page.
 import t from './i18n/fr.js';
-import { fmtCriterion, fmtInt, fmtPostcode, helpLink, tr } from './lib/format.js';
+import { fmtCriterion, fmtInt, fmtPostcode, helpLink, textClass, tr } from './lib/format.js';
 import { roadTrip } from './lib/delivery.js';
 import { basketButton, inBasket, toggleBasket } from './lib/basket.js';
 import { communePath } from './lib/slug.js';
@@ -15,7 +15,7 @@ export function createCard(root, { onClose, meta }) {
   });
 
   const kpi = (label, value, sub = '') =>
-    `<div class="kpi"><span>${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+    `<div class="kpi"><dt>${label}</dt><dd class="kpi-v${textClass(value)}">${value}</dd>${sub ? `<dd class="kpi-sub">${sub}</dd>` : ''}</div>`;
 
   /** Estimated road trip across the area: "≈ 39 km", sub "≈ 47 min de route". */
   function trip(label, straightKm) {
@@ -30,14 +30,14 @@ export function createCard(root, { onClose, meta }) {
     if (!z) return '';
     return `<section class="card-zone" aria-labelledby="card-zone-title">
         <h3 id="card-zone-title">${z.radius ? tr('card.zone.titleKm', { km: z.radius }) : tr('card.zone.titleN', { n: z.n })}${helpLink('tournee', t['delivery.title'])}</h3>
-        <div class="kpis">
+        <dl class="kpis">
           ${kpi(t['card.zone.communes'], fmtInt(z.n), tr('card.zone.noBakery', { n: fmtInt(z.noBakery) }))}
           ${kpi(t['card.inhabitants'], fmtInt(z.pop), tr('card.inYear', { year: y.census }))}
           ${kpi(t['card.bakeries'], z.bakeries ? fmtInt(z.bakeries) : t['card.none'], tr('card.inYear', { year: y.bpe }))}
           ${kpi(t['card.perBakery'], z.bakeries ? fmtInt(z.pop / z.bakeries) : '—', t['card.zone.average'])}
           ${trip(t['card.zone.northSouth'], z.northSouthKm)}
           ${trip(t['card.zone.eastWest'], z.eastWestKm)}
-        </div>
+        </dl>
       </section>`;
   }
 
@@ -61,12 +61,12 @@ export function createCard(root, { onClose, meta }) {
         <b>${view.score == null ? '–' : view.score}</b>
         <span class="card-muted">${scoreText}</span>
       </div>
-      <div class="kpis">
+      <dl class="kpis">
         ${kpi(t['card.inhabitants'], fmtInt(c.pop), tr('card.inYear', { year: y.census }))}
         ${kpi(t['card.bakeries'], c.bakeries ? fmtInt(c.bakeries) : t['card.none'], tr('card.inYear', { year: y.bpe }))}
         ${kpi(t['card.perBakery'], c.bakeries ? fmtInt(c.pop / c.bakeries) : '—')}
         ${kpi(t['card.income'], fmtCriterion('income', c.v.income), tr('card.inYear', { year: y.income }))}
-      </div>
+      </dl>
       ${zoneBlock(view.zone, y)}
       <div class="card-actions">
         <a class="card-page" href="${communePath(view.depName, c.name, c.code)}">${t['card.page']}</a>

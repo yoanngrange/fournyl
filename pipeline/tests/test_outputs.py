@@ -181,6 +181,10 @@ def test_local_context(index):
             assert set(pol) == {"mayor", "list", "nuance", "rounds"}  # name only: no birth date, no occupation
             for r in pol["rounds"]:
                 assert r["turnout"] is None or 0 < r["turnout"] <= 100
+                assert r["blank_null"] is None or 0 <= r["blank_null"] <= 100
+                for l in r["lists"]:
+                    # Share of registered voters never exceeds the share of valid votes.
+                    assert l["pct_reg"] is None or l["pct"] is None or l["pct_reg"] <= l["pct"] + 0.01
     clisson = load("commune/44043.json")
     assert clisson["politics"]["mayor"] and clisson["politics"]["rounds"]
 

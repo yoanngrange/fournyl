@@ -92,3 +92,8 @@ Start every milestone on Loire-Atlantique (44), then generalise.
 Accounts · Stripe · PDF market study for banks · bakeries-for-sale alerts · opt-in broker / miller leads ·
 communes looking for a baker (listings) · van-tour route planning (OSRM / OpenRouteService) ·
 B2B access for franchises · overseas départements.
+
+## Data to add once an open source exists
+- **Market days** (jour de marché per commune): a strong signal for a baker (footfall, competition on market
+  day). No national open dataset in Nov 2026; the commune page shows nothing about markets until one exists
+  (not even "not available"). Watch data.gouv.fr and regional open-data portals.

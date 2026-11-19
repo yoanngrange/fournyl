@@ -108,6 +108,8 @@ def _round(path) -> dict:
                     "name": label.strip(),
                     "nuance": r.get(f"Nuance liste {i}") if isinstance(r.get(f"Nuance liste {i}"), str) else None,
                     "pct": _pct(r.get(f"% Voix/exprimés {i}")),
+                    # Share of registered voters: what a single list's 100 % of valid votes really weighs.
+                    "pct_reg": _pct(r.get(f"% Voix/inscrits {i}")),
                     "seats": int(seats) if isinstance(seats, str) and seats.isdigit() else 0,
                 }
             )
@@ -115,7 +117,10 @@ def _round(path) -> dict:
         turnout = _pct(r["% Votants"])
         if turnout is not None and not 0 < turnout <= 100:
             turnout = None  # a few rows of the official file are inconsistent (0 %, 101 %)
-        out[r["Code commune"]] = {"turnout": turnout, "lists": lists}
+        # Blank and null ballots, % of voters: with a single list, the votes cast against it.
+        valid = _pct(r.get("% Exprimés/votants"))
+        blank_null = round(100 - valid, 2) if valid is not None and 0 <= valid <= 100 else None
+        out[r["Code commune"]] = {"turnout": turnout, "blank_null": blank_null, "lists": lists}
     return out
 
 
@@ -140,7 +145,12 @@ def politics(codes: set[str]) -> dict:
             "list": winner["name"] if winner else None,
             "nuance": winner["nuance"] if winner else None,
             "rounds": [
-                {"round": i + 1, "turnout": r["turnout"], "lists": [{k: l[k] for k in ("name", "nuance", "pct")} for l in r["lists"]]}
+                {
+                    "round": i + 1,
+                    "turnout": r["turnout"],
+                    "blank_null": r["blank_null"],
+                    "lists": [{k: l[k] for k in ("name", "nuance", "pct", "pct_reg")} for l in r["lists"]],
+                }
                 for i, r in enumerate(rounds)
             ],
         }
