@@ -131,6 +131,21 @@ def test_bakery_pages(index):
         if b["accounts"]:
             assert b["accounts"]["revenue"] > 0 and len(b["accounts"]["closed"]) == 7
     assert sum(bool(b["accounts"]) for b in shops) >= 0.05 * len(shops)
+    # Enrichments: OpenStreetMap (hours, contact), Accès Libre, location history, nearby facilities.
+    assert sum(bool(b["osm"]) for b in shops) >= 0.2 * len(shops)
+    assert sum(bool(b["access"]) for b in shops) >= 0.1 * len(shops)
+    assert sum(bool(b["history"]) for b in shops) >= 0.2 * len(shops)
+    for b in shops:
+        assert set(b["footfall"]) == {"schools", "secondary", "stations", "supermarkets", "pharmacies", "doctors", "post"}
+        for h in b["history"]:
+            assert h["to"] >= (h["from"] or 0) and h["kind"] in {"bakery", "pastry", "bake_off", "retail"}
+
+
+def test_commune_risks(index):
+    for code in index["code"]:
+        r = load(f"commune/{code}.json")["risks"]
+        assert r is not None and r["catnat"]["total"] >= r["catnat"]["recent"] >= 0
+        assert sum(r["catnat"]["by_kind"].values()) == r["catnat"]["total"]
 
 
 def test_privacy_no_individual_data():

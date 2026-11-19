@@ -669,6 +669,16 @@ body.page { height: auto; background: var(--paper); overflow-x: clip; }
 .pg-hyg-big { font-size: 15px; margin: 4px 0 0; }
 .pg-hyg-big i { font-style: normal; letter-spacing: 1px; }
 .pg-hyg-big.is-3, .pg-hyg-big.is-4 { font-weight: 700; }
+.bk-hours { list-style: none; margin: 0; padding: 0; font-family: var(--font-num); font-size: 14px; }
+.bk-hours li { padding: 6px 0; border-bottom: var(--line-soft); }
+/* Location history: newest first, the current operator marked by a thick ink edge (not colour alone). */
+.bk-history { list-style: none; margin: 8px 0 0; padding: 0; }
+.bk-history li { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 8px 0 8px 10px; border-bottom: var(--line-soft); border-left: 4px solid var(--rule-soft); font-size: 14px; }
+.bk-history li.is-current { border-left-color: var(--ink); font-weight: 700; }
+.bk-history small { color: var(--ink-3); font-weight: 400; }
+.bk-hist-when { font-family: var(--font-num); }
+.bk-risks { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+@media (max-width: 520px) { .bk-history li { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
 /* Link from a list row to the shop's own page, beside the row button. */
 .pg-points li:has(.pg-point-page) { display: grid; grid-template-columns: minmax(0, 1fr) 36px; align-items: center; }
 .pg-point-page { display: grid; place-items: center; height: 100%; min-height: 36px; font-weight: 700; text-decoration: none; color: var(--ink); }

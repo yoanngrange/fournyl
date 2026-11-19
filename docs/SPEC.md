@@ -134,7 +134,14 @@ staff bracket and year, company created, network size, seat or secondary; hygien
 competitors) · **Comptes publiés** (last revenue and net income filed as public, with the closing month; otherwise
 "non publiés") · **Concurrence à moins de 2 km** (8 nearest points of sale, linked to their pages, list and map
 linked) · **La commune** (score, inhabitants, per bakery, growth, income, bakeries, département business price,
-link to the commune page) · **Qualité de l'eau du robinet**. The commune page links each bakery and pastry shop
+link to the commune page) · **Qualité de l'eau du robinet**.
+Added Nov 19, 2026: **Horaires et contact** (OpenStreetMap via BANCO: opening hours in French, website, phone, with
+the date of the last OSM edit and a link to complete it) · **Historique de l'emplacement** (closed points of sale of
+bread within 15 m or at the same address: each operator's years; the current one first) · **Ce qui attire du passage
+à moins de 500 m** (schools, secondary schools, stations, supermarkets, pharmacies, doctors, post: BPE 2025
+geolocated) · **Accessibilité** (Accès Libre, OSM `wheelchair`) · **Risques naturels et climat** (commune level:
+known risks and CatNat declarations since 1982 by kind, and over the last 10 years).
+Not wanted (Yoann, Nov 19, 2026): BODACC notices per shop, DVF commercial property prices, DPE tertiaire. The commune page links each bakery and pastry shop
 (list arrow and map popup). Every page is indexed and in the sitemaps; a sole trader is never named (CLAUDE.md).
 
 ### 3.6 URLs (decided Oct 25, 2026)

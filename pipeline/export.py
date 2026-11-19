@@ -98,7 +98,7 @@ def index(df: pd.DataFrame, centres: pd.DataFrame, raw: pd.DataFrame, pct: pd.Da
 
 
 def commune_page(
-    code, row, all_rows, centres, dep_names, income_ref, raw, pct, neighbours, employers, politics, bread, water, wiki
+    code, row, all_rows, centres, dep_names, income_ref, raw, pct, neighbours, employers, politics, bread, water, wiki, risks=None
 ) -> dict:
     hist = [[int(c[4:]), int(row[c])] for c in all_rows.columns if c.startswith("pop_") and pd.notna(row[c])]
     bands = [label for _, label in AGE_BANDS]
@@ -153,6 +153,7 @@ def commune_page(
         "politics": politics.get(code),
         "bread_points": bread.get(code, []),
         "water": water.get(code),  # tap water hardness, null without a measure that year
+        "risks": (risks or {}).get(code),  # known natural risks and CatNat declarations (GASPAR)
         "wiki": wiki.get(code),  # Commons file name and fr.wikipedia article
         "bakery_history": {
             "since": int(HISTORY_FROM[:4]),
@@ -196,7 +197,7 @@ def _with_paths(b: dict, df: pd.DataFrame, dep_names: dict) -> dict:
 
 
 def write_all(
-    df, centres, raw, pct, display_geom, deps_gdf, adjacency, income_ref, fonds, employers, politics, bread, water, shops, wiki,
+    df, centres, raw, pct, display_geom, deps_gdf, adjacency, income_ref, fonds, employers, politics, bread, water, shops, risks, wiki,
     manifest, deps, checks,
 ):
     """Replace public/data with the outputs for the given départements."""
@@ -225,7 +226,7 @@ def write_all(
 
     for code, row in scope.iterrows():
         page = commune_page(
-            code, row, df, centres, dep_names, income_ref, raw, pct, adjacency.get(code, []), employers, politics, bread, water, wiki
+            code, row, df, centres, dep_names, income_ref, raw, pct, adjacency.get(code, []), employers, politics, bread, water, wiki, risks
         )
         _write(OUT / "commune" / f"{code}.json", page)
         # One file per commune with its bakeries and pastry shops (their own pages), only when it has some.

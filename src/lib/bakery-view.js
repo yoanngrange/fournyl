@@ -53,6 +53,95 @@ function near(b, p) {
   return `<ul class="pg-points">${rows}</ul>`;
 }
 
+/** OpenStreetMap opening hours ("Mo-Sa 07:00-19:30; Su 07:00-12:30") as French lines; anything unusual stays as written. */
+const DAYS = { Mo: 'lun.', Tu: 'mar.', We: 'mer.', Th: 'jeu.', Fr: 'ven.', Sa: 'sam.', Su: 'dim.', PH: 'jours fériés' };
+export function frenchHours(text) {
+  return text
+    .split(';')
+    .map((rule) => rule.trim())
+    .filter(Boolean)
+    .map((rule) =>
+      rule
+        .replace(/\b(Mo|Tu|We|Th|Fr|Sa|Su|PH)\b/g, (d) => DAYS[d])
+        .replace(/(\.|s)-(\w)/g, '$1 – $2')
+        .replace(/\boff\b|\bclosed\b/g, 'fermé')
+        .replace(/(\d\d:\d\d)-(\d\d:\d\d)/g, '$1 – $2')
+        .replace(/,(?=\d)/g, ', '),
+    );
+}
+
+function contact(b) {
+  const o = b.osm;
+  if (!o || !(o.hours || o.website || o.phone)) return `<p class="pg-muted">${t['bakery.osm.none']}</p>`;
+  const web = o.website ? `<a href="${esc(o.website)}" rel="nofollow noopener">${esc(o.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : '';
+  const tel = o.phone ? `<a href="tel:${esc(o.phone.replace(/\s+/g, ''))}">${esc(o.phone)}</a>` : '';
+  const hours = o.hours ? `<ul class="bk-hours">${frenchHours(o.hours).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : '';
+  return `${cols(
+    hours ? `<h3>${t['bakery.hours']}</h3>${hours}` : '',
+    `${web ? row(t['bakery.website'], web) : ''}${tel ? row(t['bakery.phone'], tel) : ''}`,
+  )}<p class="pg-muted small">${tr('bakery.osm.source', { date: o.updated ? new Date(o.updated).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '?' })}
+    ${o.osm ? ` <a href="https://www.openstreetmap.org/${esc(o.osm)}">${t['bakery.osm.edit']}</a>` : ''}</p>`;
+}
+
+function history(b) {
+  const years = (from, to) => (from == null ? '' : to - from < 1 ? t['bakery.history.year'] : tr('bakery.history.years', { n: to - from }));
+  const now = new Date().getFullYear();
+  const since = b.created ? +b.created.slice(0, 4) : null;
+  const current = `<li class="is-current"><span class="bk-hist-when">${tr('bakery.history.since', { date: b.created ? monthYear(b.created) : '?' })}</span>
+      <span>${esc(bakeryName(b))} <small>${t['bakery.history.current']} · ${years(since, now)}</small></span></li>`;
+  const past = b.history
+    .map((h) => `<li><span class="bk-hist-when">${tr('bakery.history.period', { from: h.from ?? '?', to: h.to })}</span>
+      <span>${h.name ? esc(h.name) : `<i>${t['page.bread.noName']}</i>`} <small>${t[`page.bread.${h.kind}`]}${h.from ? ` · ${years(h.from, h.to)}` : ''}</small></span></li>`)
+    .join('');
+  const summary = !b.history.length ? t['bakery.history.none'] : b.history.length === 1 ? t['bakery.history.countOne'] : tr('bakery.history.count', { n: b.history.length });
+  return `<p>${summary}</p><ol class="bk-history">${current}${past}</ol>`;
+}
+
+function footfall(b) {
+  const f = b.footfall || {};
+  return `<div class="pg-cols">${['schools', 'secondary', 'stations', 'supermarkets', 'pharmacies', 'doctors', 'post']
+    .reduce((acc, k, i) => {
+      acc[i % 2].push(row(t[`bakery.footfall.${k}`], f[k] ? fmtInt(f[k]) : t['card.none']));
+      return acc;
+    }, [[], []])
+    .map((c) => `<div>${c.join('')}</div>`)
+    .join('')}</div>`;
+}
+
+function access(b) {
+  const a = b.access;
+  const w = b.osm?.wheelchair;
+  if (!a && !w) return `<p class="pg-muted">${t['bakery.access.none']}</p>`;
+  const yn = (v) => (v == null ? null : t[v ? 'bakery.yes' : 'bakery.no']);
+  const rows = [
+    a && yn(a.step_free) && row(t['bakery.access.stepFree'], yn(a.step_free)),
+    a && a.steps != null && row(t['bakery.access.steps'], fmtInt(a.steps)),
+    a && a.ramp != null && row(t['bakery.access.ramp'], yn(a.ramp)),
+    a && a.width && row(t['bakery.access.width'], `${fmtInt(a.width)} cm`),
+    a && a.door && row(t['bakery.access.door'], esc(a.door)),
+    a && a.parking != null && row(t['bakery.access.parking'], yn(a.parking)),
+    a && a.staff && row(t['bakery.access.staff'], esc(a.staff)),
+    w && row(t['bakery.access.wheelchair'], t[`bakery.wheelchair.${w}`] || esc(w)),
+  ].filter(Boolean);
+  return `${rows.join('')}<p class="pg-muted small">${t['bakery.access.source']}</p>`;
+}
+
+function risks(p) {
+  const r = p.risks;
+  if (!r) return `<p class="pg-muted">${t['bakery.risks.none']}</p>`;
+  const c = r.catnat;
+  const kinds = Object.entries(c.by_kind).sort((a, b) => b[1] - a[1]);
+  const max = Math.max(1, ...kinds.map(([, n]) => n));
+  return cols(
+    `<dl class="pg-tiles is-2">
+      ${tile(t['bakery.risks.catnat'], fmtInt(c.total), tr('bakery.risks.catnatValue', { since: c.since }))}
+      ${tile(tr('bakery.risks.recent', { from: c.recent_from }), fmtInt(c.recent))}
+    </dl>
+    ${kinds.map(([k, n]) => `<div class="pg-bar"><span>${t[`bakery.risks.kind.${k}`]}</span><div class="pg-bar-track"><i style="width:${(100 * n) / max}%"></i></div><b>${fmtInt(n)}</b></div>`).join('')}`,
+    `<h3>${t['bakery.risks.known']}</h3>${r.known.length ? `<ul class="bk-risks">${r.known.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>` : `<p class="pg-muted">${t['bakery.risks.none']}</p>`}`,
+  );
+}
+
 function commune(p, fonds) {
   const pct = Object.fromEntries(Object.entries(p.criteria).map(([k, v]) => [k, v.pct]));
   const s = score(pct, WEIGHTS);
@@ -95,9 +184,14 @@ export function bakeryHTML(b, p, meta, fonds) {
         <figure class="bk-map-wrap"><div class="bk-map" role="img" aria-label="${esc(t['bakery.mapLabel'])}"></div>
           <figcaption class="pg-legend"><span><i class="is-here"></i>${t['bakery.here']}</span>${Object.entries(KIND_COLOURS).map(([k, c]) => `<span><i style="background:${c}"></i>${t[`page.bread.${k}`]}</span>`).join('')}</figcaption>
         </figure></div>`)}
+      ${section('bk-contact', t['bakery.contact'], 'horaires', contact(b))}
+      ${section('bk-history', t['bakery.history'], 'historique', history(b))}
       ${section('bk-acc', t['bakery.accounts'], 'comptes', accounts(b))}
       ${section('bk-near', t['bakery.near'], 'concurrence-proche', near(b, p))}
+      ${section('bk-footfall', t['bakery.footfall'], 'passage', footfall(b))}
+      ${section('bk-access', t['bakery.access'], 'accessibilite', access(b))}
       ${section('bk-commune', `${t['bakery.commune']} : ${esc(p.name)}`, 'note', commune(p, fonds))}
+      ${section('bk-risks', `${t['bakery.risks']} · ${esc(p.name)}`, 'risques', risks(p))}
       ${section('bk-water', t['page.water'], 'eau', water(p))}
     </div>
     <p class="pg-sources">${tr('page.built', { built: new Date(meta.built_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) })} ${tr('bakery.sources', { sirene: sireneMonth, water: y.water })}<a href="aide/#boutique">${t['help.link']}</a></p>`;
