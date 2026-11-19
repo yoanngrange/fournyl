@@ -1,11 +1,10 @@
 // Bakery page: one bakery or pastry shop (data/bakery/<commune>.json), with the context of its commune
 // (data/commune/<commune>.json). Same building blocks as the commune page (src/lib/commune-view.js).
-import * as maplibregl from '../../vendor/maplibre-gl-6.11.2/maplibre-gl.mjs';
 import t from '../i18n/fr.js';
-import { BIN_COLOURS, WEIGHTS, bin, category, score } from './scoring.js';
+import { WEIGHTS, category, score } from './scoring.js';
 import { fmtEuro, fmtInt, fmtSigned, helpLink, tr } from './format.js';
 import { communePath } from './slug.js';
-import { IGN_PLAN, KIND_COLOURS, cols, esc, hygiene, hygieneText, monthYear, row, section, tile, water } from './commune-view.js';
+import { IGN_PLAN, KIND_COLOURS, cols, esc, hygiene, hygieneText, loadMaplibre, monthYear, row, section, tile } from './commune-view.js';
 
 const kindLabel = (b) => t[`page.bread.${b.kind}`];
 export const bakeryName = (b) => b.name || `${kindLabel(b)} · ${b.address}`;
@@ -24,7 +23,7 @@ function facts(b) {
 }
 
 function accounts(b) {
-  if (!b.accounts) return `<p class="pg-muted">${t['bakery.accounts.none']}</p>`;
+  if (!b.accounts) return '';
   const closed = tr('bakery.closed', { date: monthYear(b.accounts.closed) });
   return `<dl class="pg-tiles is-2">
     ${tile(t['bakery.revenue'], fmtEuro(b.accounts.revenue), closed)}
@@ -72,7 +71,7 @@ export function frenchHours(text) {
 
 function contact(b) {
   const o = b.osm;
-  if (!o || !(o.hours || o.website || o.phone)) return `<p class="pg-muted">${t['bakery.osm.none']}</p>`;
+  if (!o || !(o.hours || o.website || o.phone)) return '';
   const web = o.website ? `<a href="${esc(o.website)}" rel="nofollow noopener">${esc(o.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : '';
   const tel = o.phone ? `<a href="tel:${esc(o.phone.replace(/\s+/g, ''))}">${esc(o.phone)}</a>` : '';
   const hours = o.hours ? `<ul class="bk-hours">${frenchHours(o.hours).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : '';
@@ -83,23 +82,30 @@ function contact(b) {
     ${o.osm ? ` <a href="https://www.openstreetmap.org/${esc(o.osm)}">${t['bakery.osm.edit']}</a>` : ''}</p>`;
 }
 
+/**
+ * Who ran a point of sale here. A closed one that ended before the current operator's start (one year of margin:
+ * closures are registered late) is a predecessor; one that ran at the same time stood beside it (a neighbouring shop at the same address, or a
+ * corner inside it) and is listed apart.
+ */
 function history(b) {
   const years = (from, to) => (from == null ? '' : to - from < 1 ? t['bakery.history.year'] : tr('bakery.history.years', { n: to - from }));
   const now = new Date().getFullYear();
   const since = b.created ? +b.created.slice(0, 4) : null;
+  // A closure is often registered months after the takeover: one year of overlap still makes a predecessor.
+  const before = b.history.filter((h) => since == null || h.to <= since + 1);
+  const beside = b.history.filter((h) => since != null && h.to > since + 1);
+  const line = (h) => `<li><span class="bk-hist-when">${tr('bakery.history.period', { from: h.from ?? '?', to: h.to })}</span>
+      <span>${h.name ? esc(h.name) : `<i>${t['page.bread.noName']}</i>`} <small>${t[`page.bread.${h.kind}`]}${h.from ? ` · ${years(h.from, h.to)}` : ''}</small></span></li>`;
   const current = `<li class="is-current"><span class="bk-hist-when">${tr('bakery.history.since', { date: b.created ? monthYear(b.created) : '?' })}</span>
       <span>${esc(bakeryName(b))} <small>${t['bakery.history.current']} · ${years(since, now)}</small></span></li>`;
-  const past = b.history
-    .map((h) => `<li><span class="bk-hist-when">${tr('bakery.history.period', { from: h.from ?? '?', to: h.to })}</span>
-      <span>${h.name ? esc(h.name) : `<i>${t['page.bread.noName']}</i>`} <small>${t[`page.bread.${h.kind}`]}${h.from ? ` · ${years(h.from, h.to)}` : ''}</small></span></li>`)
-    .join('');
-  const summary = !b.history.length ? t['bakery.history.none'] : b.history.length === 1 ? t['bakery.history.countOne'] : tr('bakery.history.count', { n: b.history.length });
-  return `<p>${summary}</p><ol class="bk-history">${current}${past}</ol>`;
+  const summary = !before.length ? t['bakery.history.none'] : before.length === 1 ? t['bakery.history.countOne'] : tr('bakery.history.count', { n: before.length });
+  return `<p>${summary}</p><ol class="bk-history">${current}${before.map(line).join('')}</ol>${
+    beside.length ? `<h3>${t['bakery.history.beside']}</h3><p class="pg-muted small">${t['bakery.history.besideHint']}</p><ol class="bk-history">${beside.map(line).join('')}</ol>` : ''}`;
 }
 
 function footfall(b) {
   const f = b.footfall || {};
-  return `<div class="pg-cols">${['schools', 'secondary', 'stations', 'supermarkets', 'pharmacies', 'doctors', 'post']
+  return `<div class="pg-cols">${['schools', 'colleges', 'lycees', 'stations', 'supermarkets', 'pharmacies', 'doctors', 'post']
     .reduce((acc, k, i) => {
       acc[i % 2].push(row(t[`bakery.footfall.${k}`], f[k] ? fmtInt(f[k]) : t['card.none']));
       return acc;
@@ -123,23 +129,7 @@ function access(b) {
     a && a.staff && row(t['bakery.access.staff'], esc(a.staff)),
     w && row(t['bakery.access.wheelchair'], t[`bakery.wheelchair.${w}`] || esc(w)),
   ].filter(Boolean);
-  return `${rows.join('')}<p class="pg-muted small">${t['bakery.access.source']}</p>`;
-}
-
-function risks(p) {
-  const r = p.risks;
-  if (!r) return `<p class="pg-muted">${t['bakery.risks.none']}</p>`;
-  const c = r.catnat;
-  const kinds = Object.entries(c.by_kind).sort((a, b) => b[1] - a[1]);
-  const max = Math.max(1, ...kinds.map(([, n]) => n));
-  return cols(
-    `<dl class="pg-tiles is-2">
-      ${tile(t['bakery.risks.catnat'], fmtInt(c.total), tr('bakery.risks.catnatValue', { since: c.since }))}
-      ${tile(tr('bakery.risks.recent', { from: c.recent_from }), fmtInt(c.recent))}
-    </dl>
-    ${kinds.map(([k, n]) => `<div class="pg-bar"><span>${t[`bakery.risks.kind.${k}`]}</span><div class="pg-bar-track"><i style="width:${(100 * n) / max}%"></i></div><b>${fmtInt(n)}</b></div>`).join('')}`,
-    `<h3>${t['bakery.risks.known']}</h3>${r.known.length ? `<ul class="bk-risks">${r.known.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>` : `<p class="pg-muted">${t['bakery.risks.none']}</p>`}`,
-  );
+  return rows.join('');
 }
 
 function commune(p, fonds) {
@@ -148,7 +138,7 @@ function commune(p, fonds) {
   const prices = fonds.departements[p.dep] || fonds.france;
   return `${cols(
     `<dl class="pg-tiles is-2">
-      ${tile(t['basket.row.score'], s == null ? t['cat.unknown'] : `${s} / 100`, s == null ? '' : t[`cat.${category(s)}`])}
+      ${tile(tr('bakery.communeScore', { name: esc(p.name) }), s == null ? t['cat.unknown'] : `${s} / 100`, s == null ? '' : t[`cat.${category(s)}`])}
       ${tile(t['card.inhabitants'], fmtInt(p.pop))}
       ${tile(t['card.perBakery'], p.bakeries ? fmtInt(p.pop / p.bakeries) : t['card.noBakery'])}
       ${tile(t['card.growthYearly'], fmtSigned(p.criteria.growth.v))}
@@ -165,17 +155,11 @@ export function bakeryHTML(b, p, meta, fonds) {
   const y = meta.years;
   const sirene = meta.sources.find((x) => x.id === 'sirene')?.published;
   const sireneMonth = sirene ? new Date(sirene).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
-  const pct = Object.fromEntries(Object.entries(p.criteria).map(([k, v]) => [k, v.pct]));
-  const s = score(pct, WEIGHTS);
   return `
     <div class="pg-head bk-head">
       <div class="pg-head-id">
         <h1 class="page-title">${esc(bakeryName(b))}</h1>
         <p class="pg-muted">${kindLabel(b)} · ${esc(b.address)}, ${esc(b.cp || '')} ${esc(p.name)}</p>
-      </div>
-      <div class="pg-score" title="${esc(t['basket.row.score'])} ${esc(p.name)}">
-        <span class="swatch ${category(s) === 'avoid' ? 'is-hatched' : ''}" style="background:${BIN_COLOURS[bin(s)]}"></span>
-        <b>${s ?? '–'}</b><span>${s == null ? t['cat.unknown'] : tr('card.outOf', { cat: t[`cat.${category(s)}`] })} · ${esc(p.name)}</span>
       </div>
     </div>
     <div class="pg-grid">
@@ -184,23 +168,22 @@ export function bakeryHTML(b, p, meta, fonds) {
         <figure class="bk-map-wrap"><div class="bk-map" role="img" aria-label="${esc(t['bakery.mapLabel'])}"></div>
           <figcaption class="pg-legend"><span><i class="is-here"></i>${t['bakery.here']}</span>${Object.entries(KIND_COLOURS).map(([k, c]) => `<span><i style="background:${c}"></i>${t[`page.bread.${k}`]}</span>`).join('')}</figcaption>
         </figure></div>`)}
-      ${section('bk-contact', t['bakery.contact'], 'horaires', contact(b))}
+      ${contact(b) ? section('bk-contact', t['bakery.contact'], 'horaires', contact(b)) : ''}
       ${section('bk-history', t['bakery.history'], 'historique', history(b))}
-      ${section('bk-acc', t['bakery.accounts'], 'comptes', accounts(b))}
+      ${b.accounts ? section('bk-acc', t['bakery.accounts'], 'comptes', accounts(b)) : ''}
       ${section('bk-near', t['bakery.near'], 'concurrence-proche', near(b, p))}
       ${section('bk-footfall', t['bakery.footfall'], 'passage', footfall(b))}
       ${section('bk-access', t['bakery.access'], 'accessibilite', access(b))}
       ${section('bk-commune', `${t['bakery.commune']} : ${esc(p.name)}`, 'note', commune(p, fonds))}
-      ${section('bk-risks', `${t['bakery.risks']} · ${esc(p.name)}`, 'risques', risks(p))}
-      ${section('bk-water', t['page.water'], 'eau', water(p))}
     </div>
     <p class="pg-sources">${tr('page.built', { built: new Date(meta.built_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) })} ${tr('bakery.sources', { sirene: sireneMonth, water: y.water })}<a href="aide/#boutique">${t['help.link']}</a></p>`;
 }
 
 /** Map of the shop (large ink-ringed marker) and its competitors within 2 km; list rows and markers linked. */
-export function wireBakery(root, b, p) {
+export async function wireBakery(root, b, p) {
   const el = root.querySelector('.bk-map');
   if (!el) return;
+  const maplibregl = await loadMaplibre();
   const map = new maplibregl.Map({
     container: el,
     center: [b.lon, b.lat],

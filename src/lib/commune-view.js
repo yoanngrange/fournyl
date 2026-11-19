@@ -1,6 +1,8 @@
 // Commune sheet: everything we know about one commune, from data/commune/<code>.json. Rendered on the
 // commune page (src/commune.js) and, one after the other, in the basket's PDF export (src/panier.js).
-import * as maplibregl from '../../vendor/maplibre-gl-6.11.2/maplibre-gl.mjs';
+// MapLibre (1.1 MB) is loaded only when a map is drawn: the page's text shows first, the maps follow.
+let glPromise = null;
+export const loadMaplibre = () => (glPromise ??= import('../../vendor/maplibre-gl-6.11.2/maplibre-gl.mjs'));
 import t from '../i18n/fr.js';
 import { BIN_COLOURS, CRITERIA, WEIGHTS, bin, category, score } from './scoring.js';
 import { fmtCriterion, fmtEuro, fmtInt, fmtPct, fmtSigned, helpLink, textClass, tr } from './format.js';
@@ -102,7 +104,7 @@ export function stickyHead(root) {
   bar.setAttribute('aria-hidden', 'true');
   bar.innerHTML = `<div class="pg-fixbar-inner">
       <div class="pg-fixbar-id"><b>${head.querySelector('.page-title').innerHTML}</b><small>${head.querySelector('.pg-muted').innerHTML}</small></div>
-      <div class="pg-fixbar-score">${head.querySelector('.pg-score').innerHTML}</div>
+      <div class="pg-fixbar-score">${head.querySelector('.pg-score')?.innerHTML ?? ''}</div>
     </div>`;
   document.body.append(bar);
   const top = document.querySelector('.page-top');
@@ -358,6 +360,7 @@ function bbox(geometry) {
 
 /** The commune and its neighbours, neighbours shaded by whether they have a bakery. */
 export async function locator(el, p, mapOptions = {}) {
+  const maplibregl = await loadMaplibre();
   const deps = [...new Set([p.dep, ...p.neighbours.map((n) => n.code.slice(0, 2))])];
   const geos = await Promise.all(deps.map((d) => getJSON(`geo/${d}.geojson`).catch(() => null)));
   const kinds = new Map([[p.code, 'here'], ...p.neighbours.map((n) => [n.code, n.bakeries ? 'with' : 'without'])]);
@@ -437,7 +440,7 @@ function breadRow(b, i, base) {
   const since = b.year ? ` · ${tr('page.bread.since', { year: b.year })}` : '';
   const h = hygiene(b);
   const hyg = h ? `<small class="pg-hyg is-${h.level}"><i aria-hidden="true">${'●'.repeat(5 - h.level)}${'○'.repeat(h.level - 1)}</i> ${hygieneText(h)}</small>` : '';
-  return `<li><button type="button" class="pg-point" data-i="${i}" aria-pressed="false">
+  return `<li data-km="${b.km}" data-year="${b.year ?? 9999}"><button type="button" class="pg-point" data-i="${i}" aria-pressed="false">
     <span class="pg-dot" style="background:${KIND_COLOURS[b.kind]}"></span>
     <span>${b.name ? esc(b.name) : `<i>${t['page.bread.noName']}</i>`} <small>${t[`page.bread.${b.kind}`]}${since}</small>${hyg}</span>
     <b>${b.km.toFixed(1).replace('.', ',')} km</b></button>${
@@ -474,6 +477,23 @@ export function water(p) {
   );
 }
 
+/** Natural risks and climate exposure of the commune (GASPAR): CatNat declarations by kind, and the known risks. */
+function risks(p) {
+  const r = p.risks;
+  if (!r) return `<p class="pg-muted">${t['bakery.risks.none']}</p>`;
+  const c = r.catnat;
+  const kinds = Object.entries(c.by_kind).sort((a, b) => b[1] - a[1]);
+  const max = Math.max(1, ...kinds.map(([, n]) => n));
+  return cols(
+    `<dl class="pg-tiles is-2">
+      ${tile(t['bakery.risks.catnat'], fmtInt(c.total), tr('bakery.risks.catnatValue', { since: c.since }))}
+      ${tile(tr('bakery.risks.recent', { from: c.recent_from }), fmtInt(c.recent))}
+    </dl>
+    ${kinds.map(([k, n]) => bar(t[`bakery.risks.kind.${k}`], n, (100 * n) / max, fmtInt(n))).join('')}`,
+    `<h3>${t['bakery.risks.known']}</h3>${r.known.length ? `<ul class="bk-risks">${r.known.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>` : `<p class="pg-muted">${t['bakery.risks.none']}</p>`}`,
+  );
+}
+
 /** Points of sale in the commune first, then the others within 5 km; nearest first in each group. */
 function breadList(p) {
   const base = communePath(p.dep_name, p.name, p.code);
@@ -485,7 +505,12 @@ function breadList(p) {
   const count = `<p class="pg-muted small pg-hyg-count">${checked ? tr('page.hyg.count', { n: fmtInt(checked), total: fmtInt(p.bread_points.length) }) : t['page.hyg.countNone']}.</p>`;
   const group = (title, list, empty) => `<h3 class="pg-points-title">${title} <span>${fmtInt(list.length)}</span></h3>
     ${list.length ? `<ul class="pg-points">${list.map(([b, i]) => breadRow(b, i, base)).join('')}</ul>` : `<p class="pg-muted small">${empty}</p>`}`;
-  return `${count}<div class="pg-points-wrap">${group(t['page.bread.here'], here, t['page.bread.hereNone'])}${
+  const sort = `<div class="pg-sort" role="group" aria-label="${t['page.bread.sort']}">
+    <span>${t['page.bread.sort']}</span>
+    <button type="button" data-sort="km" aria-pressed="true">${t['page.bread.sort.km']}</button>
+    <button type="button" data-sort="year" aria-pressed="false">${t['page.bread.sort.year']}</button>
+  </div>`;
+  return `${count}${sort}<div class="pg-points-wrap">${group(t['page.bread.here'], here, t['page.bread.hereNone'])}${
     around.length ? group(t['page.bread.around'], around, '') : ''}</div>`;
 }
 
@@ -502,8 +527,9 @@ function disc(lon, lat, km, steps = 96) {
   return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [ring] } };
 }
 
-export function breadMap(el, p, { print = false, ...mapOptions } = {}) {
+export async function breadMap(el, p, { print = false, ...mapOptions } = {}) {
   if (!p.bread_points.length) return null;
+  const maplibregl = await loadMaplibre();
   const area = disc(p.lon, p.lat, BREAD_RADIUS_KM);
   const ring = area.geometry.coordinates[0];
   const lons = ring.map((c) => c[0]);
@@ -554,6 +580,23 @@ export function breadMap(el, p, { print = false, ...mapOptions } = {}) {
  * map moved if it is off screen), a marker picked on the map highlights its row and scrolls the list to it
  * (the list scrolls, not the page).
  */
+/** Sort both lists (in the commune, around it) by distance to the town hall (default) or by age, oldest first. */
+function wireSort(root) {
+  const box = root.querySelector('.pg-sort');
+  if (!box) return;
+  box.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-sort]');
+    if (!btn) return;
+    const key = btn.dataset.sort;
+    for (const b of box.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b === btn));
+    for (const ul of root.querySelectorAll('.pg-points-wrap .pg-points')) {
+      const items = [...ul.children];
+      items.sort((a, b) => (key === 'km' ? +a.dataset.km - +b.dataset.km : +a.dataset.year - +b.dataset.year || +a.dataset.km - +b.dataset.km));
+      ul.append(...items);
+    }
+  });
+}
+
 function linkBread(root, made) {
   if (!made) return;
   const { map, markers } = made;
@@ -598,27 +641,32 @@ const stripTags = (html) => {
 };
 
 /** Banner photo with its author and licence, asked from Commons so the credit is always current. */
-async function photo(el, p) {
+async function photo(el, p, { print = false } = {}) {
   const file = p.wiki?.file;
-  if (!file) return;
+  if (!file || !el) return;
+  if (!print && matchMedia('(max-width: 720px)').matches) return; // no photo on phones: not even downloaded
   const api = new URL('https://commons.wikimedia.org/w/api.php');
   api.search = new URLSearchParams({
     action: 'query',
     titles: `File:${file}`,
     prop: 'imageinfo',
     iiprop: 'url|extmetadata',
-    iiurlwidth: '1600',
+    iiurlwidth: '1280', // the photo is at most 1180 px wide
     format: 'json',
     origin: '*',
   });
   const data = await fetch(api).then((r) => r.json());
   const info = Object.values(data.query?.pages || {})[0]?.imageinfo?.[0];
-  if (!info?.thumburl) return;
+  if (!info?.thumburl) {
+    el.hidden = true;
+    return;
+  }
   const meta = info.extmetadata || {};
   const author = stripTags(meta.Artist?.value) || t['page.photo.unknownAuthor'];
   const licence = stripTags(meta.LicenseShortName?.value);
-  el.innerHTML = `<img src="${esc(info.thumburl)}" alt="${esc(tr('page.photo.alt', { name: p.name }))}" loading="eager">
+  el.innerHTML = `<img src="${esc(info.thumburl)}" alt="${esc(tr('page.photo.alt', { name: p.name }))}" loading="eager" fetchpriority="high" decoding="async">
     <figcaption>${esc(tr('page.photo.credit', { author, licence }))} · <a href="${esc(info.descriptionurl)}">Wikimedia Commons</a></figcaption>`;
+  el.classList.remove('is-pending');
   el.hidden = false;
 }
 
@@ -638,7 +686,7 @@ export function communeHTML(p, meta, fonds, { idp = '', actions = true, inBasket
   const first = p.history[0]?.[0];
   const firstPop = p.history[0]?.[1];
   return `
-    <figure class="pg-photo" id="${idp}photo" hidden></figure>
+    <figure class="pg-photo${p.wiki?.file ? ' is-pending' : ''}" id="${idp}photo"${p.wiki?.file ? '' : ' hidden'}></figure>
     <div class="pg-head" id="${idp}pg-head">
       <div class="pg-head-id">
         <h1 class="page-title">${esc(p.name)}</h1>
@@ -689,6 +737,7 @@ export function communeHTML(p, meta, fonds, { idp = '', actions = true, inBasket
             <span><i class="is-pin"></i>${t['page.bread.townHall']}</span></div>${breadList(p)}
           </div></div>`)}
       ${section(`${idp}water`, t['page.water'], 'eau', water(p))}
+      ${section(`${idp}risks`, t['bakery.risks'], 'risques', risks(p))}
       ${section(`${idp}eco`, t['card.economy'], 'employeurs', economy(p))}
       ${section(`${idp}inc`, t['page.incomeHousing'], 'revenu', incomeHousing(p, p.dep_name))}
       ${section(`${idp}safe`, t['page.safetyServices'], 'delinquance', safetyServices(p))}
@@ -757,18 +806,21 @@ const imageLoaded = (img, ms) =>
  */
 export async function wireCommune(root, p, { print = false } = {}) {
   const photoEl = root.querySelector('.pg-photo');
-  const photoDone = photo(photoEl, p).catch(() => {});
+  const photoDone = photo(photoEl, p, { print }).catch(() => {
+    if (photoEl) photoEl.hidden = true; // Commons unreachable: give the room back
+  });
   const locEl = root.querySelector('.pg-locator-map');
   const breadEl = root.querySelector('.pg-bread-map');
   if (!print) {
     locator(locEl, p).catch(() => {});
-    if (breadEl) linkBread(root, breadMap(breadEl, p));
+    if (breadEl) breadMap(breadEl, p).then((made) => linkBread(root, made));
+    wireSort(root);
     root.querySelectorAll('.pg-chart-wrap').forEach(wireChart);
     return;
   }
   const opts = { canvasContextAttributes: { preserveDrawingBuffer: true }, fadeDuration: 0 };
   await freeze(locEl, await locator(locEl, p, opts).catch(() => null));
-  if (breadEl) await freeze(breadEl, breadMap(breadEl, p, { print: true, interactive: false, ...opts }), t['page.bread.attribution']);
+  if (breadEl) await freeze(breadEl, await breadMap(breadEl, p, { print: true, interactive: false, ...opts }), t['page.bread.attribution']);
   await photoDone;
   await imageLoaded(photoEl?.querySelector('img'), 8000);
 }

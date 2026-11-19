@@ -362,7 +362,8 @@ HISTORY_NEAR_M = 15  # a closed point of sale of bread this close to a shop stoo
 FOOTFALL_M = 500  # facilities that bring passers-by, counted around a bakery
 FOOTFALL = {  # BPE 2025 facility codes
     "schools": ["C107", "C108", "C109"],  # écoles maternelles, primaires, élémentaires
-    "secondary": ["C201", "C301", "C302", "C303"],  # collèges, lycées
+    "colleges": ["C201"],  # collèges
+    "lycees": ["C301", "C302", "C303"],  # lycées généraux, technologiques, professionnels
     "stations": ["E107", "E108", "E109"],  # gares
     "supermarkets": ["B104", "B105"],  # hypermarchés, supermarchés
     "pharmacies": ["D307"],
