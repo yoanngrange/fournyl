@@ -66,7 +66,9 @@ Built by `pipeline/pages.py` on every deploy:
 - Canonical URLs, Open Graph / Twitter tags with `img/og.png` (1200 × 630), JSON-LD (WebSite + Organization on
   the home page, BreadcrumbList on département and commune pages).
 - Crawlable links: the map sidebar lists every département (home) or every commune (département page).
-- `sitemap.xml` (every page, `lastmod` = data build date), `robots.txt`, `llms.txt` (summary for AI assistants).
+- `sitemap.xml`: a sitemap index pointing to `sitemap-pages.xml` (home, help, départements, communes) and
+  `sitemap-boulangeries-N.xml` (40,000 bakery pages per file); `lastmod` = data build date. Submit `sitemap.xml`
+  alone. `robots.txt`, `llms.txt` (summary for AI assistants: commune and bakery pages, sources).
   "Ma sélection" is `noindex`.
 
 One-time, by Yoann (needs his Google / Microsoft accounts):

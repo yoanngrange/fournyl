@@ -79,7 +79,7 @@ def test_static_pages_get_analytics_marker_replaced(site, tmp_path, monkeypatch)
     for rel in pages.STATIC_PAGES:
         text = (tmp_path / rel).read_text()
         assert "<!-- analytics -->" not in text and '"token": "tok"' in text
-    assert "aide/" in (tmp_path / "sitemap.xml").read_text()
+    assert "aide/" in (tmp_path / "sitemap-pages.xml").read_text()
 
 
 def test_at_place():
@@ -107,8 +107,12 @@ def test_seo_tags(site, tmp_path):
     assert '"@type":"Organization"' in home
     llms = (tmp_path / "llms.txt").read_text()
     assert llms.startswith("# Fournyl\n") and f"({SITE_URL}loire-atlantique/)" in llms
-    sitemap = (tmp_path / "sitemap.xml").read_text()
-    assert sitemap.count("<url>") == 2 + len(site.exported) + len(site.communes) and "<lastmod>" in sitemap
+    pages = (tmp_path / "sitemap-pages.xml").read_text()
+    assert pages.count("<url>") == 2 + len(site.exported) + len(site.communes) and "<lastmod>" in pages
+    index = (tmp_path / "sitemap.xml").read_text()
+    assert "<sitemapindex" in index and "sitemap-pages.xml" in index
+    assert ("sitemap-boulangeries-1.xml" in index) == bool(site.bakery_count())
+    assert "Sitemap: " in (tmp_path / "robots.txt").read_text() and "Bakery pages" in llms
     assert "noindex" in (tmp_path / "panier/index.html").read_text()
 
 
