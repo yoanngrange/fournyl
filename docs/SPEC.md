@@ -141,7 +141,14 @@ bread within 15 m or at the same address: each operator's years; the current one
 à moins de 500 m** (schools, secondary schools, stations, supermarkets, pharmacies, doctors, post: BPE 2025
 geolocated) · **Accessibilité** (Accès Libre, OSM `wheelchair`) · **Risques naturels et climat** (commune level:
 known risks and CatNat declarations since 1982 by kind, and over the last 10 years).
-Not wanted (Yoann, Nov 19, 2026): BODACC notices per shop, DVF commercial property prices, DPE tertiaire. The commune page links each bakery and pastry shop
+Not wanted (Yoann, Nov 19, 2026): BODACC notices per shop, DVF commercial property prices, DPE tertiaire.
+Nov 20, 2026 (Yoann's review): no score in the bakery page header (it is the commune's: shown only in the commune block,
+labelled "Note de la commune"); "Horaires et contact" and "Chiffre d'affaires et résultats" shown only when there is
+data; source notes only on the help page; collèges and lycées counted apart, after schools; natural risks and tap
+water only on commune pages. Location history: a closed shop that ended at most one year after the current
+operator's start is a predecessor (closures are registered late); one that ran alongside is listed apart ("Au même
+endroit, pendant l'activité actuelle": a neighbouring shop at the same address or a corner inside it).
+Commune page: the points of sale list sorts by distance to the town hall (default) or by age, oldest first. The commune page links each bakery and pastry shop
 (list arrow and map popup). Every page is indexed and in the sitemaps; a sole trader is never named (CLAUDE.md).
 
 ### 3.6 URLs (decided Oct 25, 2026)

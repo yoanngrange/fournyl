@@ -143,7 +143,7 @@ def test_bakery_pages(index, meta):
         assert sum(bool(b["access"]) for b in shops) >= 0.1 * len(shops)
     assert sum(bool(b["history"]) for b in shops) >= 0.2 * len(shops)
     for b in shops:
-        assert b["footfall"] is None or set(b["footfall"]) == {"schools", "secondary", "stations", "supermarkets", "pharmacies", "doctors", "post"}
+        assert b["footfall"] is None or set(b["footfall"]) == {"schools", "colleges", "lycees", "stations", "supermarkets", "pharmacies", "doctors", "post"}
         for h in b["history"]:
             assert h["to"] >= (h["from"] or 0) and h["kind"] in {"bakery", "pastry", "bake_off", "retail"}
 

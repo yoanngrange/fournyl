@@ -296,7 +296,7 @@ export async function wireCompare(root, pages) {
   }
   for (const el of root.querySelectorAll('.cmp-map.pg-bread-map')) {
     const p = pages[+el.dataset.i];
-    if (p.bread_points.length) await freeze(el, breadMap(el, p, { print: true, interactive: false, ...opts }), t['page.bread.attribution']);
+    if (p.bread_points.length) await freeze(el, await breadMap(el, p, { print: true, interactive: false, ...opts }), t['page.bread.attribution']);
     else el.outerHTML = `<p class="pg-muted small">${t['page.bread.none']}</p>`;
   }
 }
