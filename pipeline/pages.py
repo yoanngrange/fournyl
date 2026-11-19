@@ -222,13 +222,14 @@ class Site:
             (c["name"], canonical),
         ]))
         shops = self.shops(code)
+        summary = self.commune_static(code)
         links = "".join(
             f'<li><a href="{html.escape(self.bakery_path(code, b), quote=True)}">'
             f'{html.escape(shop_label(b, t["page.bread.pastry"] if b["kind"] == "pastry" else t["page.bread.bakery"]))}</a></li>'
             for b in shops
         )
         shops_html = f'<h2>{html.escape(_fill(t["seo.commune.shops"], commune=c["name"]))}</h2><ul>{links}</ul>' if shops else ""
-        raw = {"footer": self.footer(), "analytics": analytics_tag(), "seo": seo, "shops": shops_html}
+        raw = {"footer": self.footer(), "analytics": analytics_tag(), "seo": seo, "shops": summary + shops_html}
         return re.sub(
             r"\{\{(\w+)\}\}",
             lambda m: raw[m.group(1)] if m.group(1) in raw else html.escape(str(params[m.group(1)]), quote=True),
@@ -245,6 +246,43 @@ class Site:
     def bakery_path(self, code: str, b: dict) -> str:
         c = self.communes[code]
         return commune_path(self.dep_names[c["dep"]], c["name"], code) + bakery_slug(b)
+
+    def commune_static(self, code: str) -> str:
+        """Key figures of a commune as plain HTML (search engines read them without running the script), and links
+        to the nearby communes. Kept small: the site must stay under GitHub Pages' 1 GB."""
+        f = self.data / "commune" / f"{code}.json"
+        if not f.exists():
+            return ""
+        p = json.loads(f.read_text())
+        t = self.t
+        e = lambda v: html.escape(str(v), quote=True)  # noqa: E731
+        crit = p.get("criteria", {})
+        dec = lambda v, d=1: f"{v:.{d}f}".replace(".", ",")  # noqa: E731
+        rows = [(t["card.inhabitants"], _int(p["pop"])), (t["card.bakeries"], _int(p["bakeries"]) if p["bakeries"] else t["card.none"])]
+        if p["bakeries"]:
+            rows.append((t["card.perBakery"], _int(p["pop"] / p["bakeries"])))
+        if p["income"]["median"] is not None:
+            rows.append((t["card.income"], f"{_int(p['income']['median'])} €"))
+        if crit.get("growth", {}).get("v") is not None:
+            g = crit["growth"]["v"]
+            rows.append((t["card.growthYearly"], f"{'+' if g > 0 else '−' if g < 0 else ''}{dec(abs(g), 1)} %"))
+        if crit.get("crime", {}).get("v") is not None:
+            rows.append((t["card.crime"], f"{dec(crit['crime']['v'])} ‰"))
+        comp = p.get("competition") or {}
+        if comp:
+            rows.append((_fill(t["page.within"], km=comp["km"]), f"{_int(comp['bakeries'])} {t['page.within.bakeries'].lower()}"))
+        h = p.get("bakery_history") or {}
+        if h:
+            rows.append((_fill(t["card.history"], since=h["since"]).rstrip(" :"),
+                         f"{_int(h['takeovers'])} {t['card.takeovers'].lower()}, {_int(h['openings'])} {t['card.openings'].lower()}"))
+        if p.get("water"):
+            rows.append((t["page.water"], f"{dec(p['water']['th'])} °f"))
+        facts = "".join(f"<dt>{e(k)}</dt><dd>{e(v)}</dd>" for k, v in rows)
+        near = "".join(
+            f'<li><a href="{e(commune_path(self.dep_names[self.communes[n["code"]]["dep"]], n["name"], n["code"]))}">{e(n["name"])}</a></li>'
+            for n in p.get("nearby", []) if n["code"] != code and n["code"] in self.communes
+        )
+        return f'<dl class="seo-facts">{facts}</dl>' + (f'<h2>{e(t["page.nearby"])}</h2><ul>{near}</ul>' if near else "")
 
     def bakery_facts(self, b: dict) -> list[str]:
         """Short facts for the meta description, most telling first."""
