@@ -80,6 +80,11 @@ jobs:
           # ~35,000 files: GitHub's file sync regularly takes more than the default 10 minutes.
           timeout: 1800000
 
+      # Tell Bing and the other IndexNow engines that the pages changed (never fails the deploy).
+      - uses: actions/checkout@v4
+      - name: IndexNow
+        run: python3 scripts/indexnow.py
+
   # Any failure (a source renamed or late, a data test failing, the deploy) emails Yoann.
   notify-failure:
     needs: [build, deploy]

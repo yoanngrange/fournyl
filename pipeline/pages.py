@@ -77,6 +77,17 @@ def shop_label(b: dict, kind: str) -> str:
     return f"{kind} {name}"
 
 
+DESCRIPTION_MAX = 160  # search engines cut longer descriptions (Bing flags them)
+
+
+def clip(text: str, n: int = DESCRIPTION_MAX) -> str:
+    """Shorten to n characters at a word boundary, with an ellipsis."""
+    if len(text) <= n:
+        return text
+    cut = text[: n - 1].rsplit(" ", 1)[0].rstrip(" ,;:–-")
+    return cut + "…"
+
+
 def bakery_slug(b: dict) -> str:
     """Mirror of bakerySlug in src/lib/slug.js: 'frangins-a15fb72f9c/' (a shop without a known name: its kind)."""
     name = b.get("name") or ("patisserie" if b.get("kind") == "pastry" else "boulangerie")
@@ -203,6 +214,7 @@ class Site:
             t["seo.commune.description"], at=at_place(c["name"]), dep=dep_name, pop=_int(c["pop"]),
             bakeries=bakeries, income=income, score=score,
         )
+        description = clip(description)
         canonical = SITE_URL + commune_path(dep_name, c["name"], code)
         params = {
             "base": "../../",
@@ -285,22 +297,31 @@ class Site:
         return f'<dl class="seo-facts">{facts}</dl>' + (f'<h2>{e(t["page.nearby"])}</h2><ul>{near}</ul>' if near else "")
 
     def bakery_facts(self, b: dict) -> list[str]:
-        """Short facts for the meta description, most telling first."""
+        """Short facts for the meta description, most telling first (the last ones are dropped to fit)."""
         t = self.t
         facts = []
         if b.get("created"):
             facts.append(_fill(t["seo.bakery.since"], year=b["created"][:4]))
-        if b.get("hyg") and b.get("hyg_date"):
-            y, m = b["hyg_date"].split("-")
-            facts.append(_fill(t["seo.bakery.hygiene"], level=HYGIENE_WORDS[b["hyg"]], date=f"{MONTHS[int(m) - 1]} {y}"))
         n = len(b.get("near") or [])
         facts.append(t["seo.bakery.nearNone"] if n == 0 else t["seo.bakery.nearOne"] if n == 1 else _fill(t["seo.bakery.near"], n=n))
         if b.get("accounts"):
             facts.append(_fill(t["seo.bakery.revenue"], revenue=f"{_int(b['accounts']['revenue'])} €", year=b["accounts"]["closed"][:4]))
+        if b.get("hyg"):
+            facts.append(_fill(t["seo.bakery.hygiene"], level=HYGIENE_WORDS[b["hyg"]]))
         if b.get("history"):
             k = len(b["history"])
             facts.append(t["seo.bakery.historyOne"] if k == 1 else _fill(t["seo.bakery.history"], n=k))
         return facts
+
+    def bakery_description(self, b: dict, label: str, c: dict) -> str:
+        """Meta description under DESCRIPTION_MAX characters: the least telling facts are dropped first."""
+        facts = self.bakery_facts(b)
+        while True:
+            text = _fill(self.t["seo.bakery.description"], label=label, address=b.get("address") or "", cp=b.get("cp") or c["cp"],
+                         commune=c["name"], facts=", ".join(facts))
+            if len(text) <= DESCRIPTION_MAX or len(facts) <= 1:
+                return clip(text)
+            facts = facts[:-1]
 
     def bakery_static(self, b: dict, label: str, kind: str, c: dict, cpath: str) -> str:
         """The page content as plain HTML (before src/boulangerie.js renders the full page): for search engines,
@@ -353,8 +374,7 @@ class Site:
         label = shop_label(b, kind)
         cp = b.get("cp") or c["cp"]
         title = _fill(t["seo.bakery.title"], label=label, commune=c["name"])
-        description = _fill(t["seo.bakery.description"], label=label, address=b.get("address") or "", cp=cp, commune=c["name"],
-                            facts=", ".join(self.bakery_facts(b)))
+        description = self.bakery_description(b, label, c)
         canonical = SITE_URL + self.bakery_path(code, b)
         cpath = commune_path(dep_name, c["name"], code)
         params = {
@@ -381,8 +401,7 @@ class Site:
             "@type": "Bakery",
             "name": label,
             "url": url,
-            "description": _fill(self.t["seo.bakery.description"], label=label, address=b.get("address") or "", cp=b.get("cp") or c["cp"],
-                                 commune=c["name"], facts=", ".join(self.bakery_facts(b))),
+            "description": self.bakery_description(b, label, c),
             "address": {"@type": "PostalAddress", "streetAddress": b.get("address"), "postalCode": b.get("cp") or c["cp"],
                         "addressLocality": c["name"], "addressCountry": "FR"},
             "geo": {"@type": "GeoCoordinates", "latitude": b["lat"], "longitude": b["lon"]},
@@ -417,6 +436,17 @@ class Site:
             ("name", "twitter:card", "summary_large_image"),
         ]
         return "\n  ".join(f'<meta {k}="{n}" content="{html.escape(v, quote=True)}">' for k, n, v in tags)
+
+    def fill_i18n(self, page: str) -> str:
+        """Text of the elements marked data-i18n (and data-i18n-html) in the map shell, from fr.js."""
+        def text(m):
+            key = m.group(3)
+            value = self.t.get(key)
+            if value is None:
+                return m.group(0)
+            body = value if m.group(2) == "-html" else html.escape(value)
+            return f"{m.group(1)}{body}</{m.group(4)}>"
+        return re.sub(r'(<(?:\w+)\b[^>]*\bdata-i18n(-html)?="([\w.]+)"[^>]*>)</(\w+)>', text, page)
 
     def places(self, title: str, links: list[tuple[str, str]]) -> str:
         """Collapsible list of links in the map sidebar: keyboard access to every place, and crawlable links."""
@@ -453,7 +483,11 @@ class Site:
         return self._head(page, title, desc, extra).replace("<!-- places -->", self.dep_links())
 
     def _head(self, page: str, title: str, desc: str, extra: str) -> str:
-        """Set <title> and the description, drop the shell's generic social tags, add `extra` to <head>."""
+        """Set <title> and the description, drop the shell's generic social tags, add `extra` to <head>.
+        The interface labels are written in the HTML too (the script would fill them in): search engines that do not
+        run scripts see a real <h1> and the page's text."""
+        desc = clip(desc)
+        page = self.fill_i18n(page)
         page = re.sub(r"<title>.*?</title>", lambda _: f"<title>{html.escape(title)}</title>", page, count=1)
         page = re.sub(
             r'<meta name="description" content="[^"]*">',

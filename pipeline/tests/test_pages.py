@@ -1,3 +1,4 @@
+import html
 """Generated pages and human-readable URLs (pipeline/pages.py, src/lib/slug.js)."""
 
 import json
@@ -48,7 +49,7 @@ def test_every_commune_has_a_unique_path(site):
 
 def test_routes(site):
     clisson = site.route("loire-atlantique/clisson-44043/")
-    assert clisson and "<title>Créer une boulangerie à Clisson (44190)" in clisson and 'content="44043"' in clisson
+    assert clisson and "<title>Créer ou reprendre une boulangerie à Clisson (44190)" in clisson and 'content="44043"' in clisson
     assert f'rel="canonical" href="{SITE_URL}loire-atlantique/clisson-44043/"' in clisson
     assert site.route("loire-atlantique/") is not None
     assert site.route("loire-atlantique/clison-44043/") is None  # misspelt: 404 page redirects
@@ -139,3 +140,17 @@ def test_bakery_pages(site):
     assert shop_label({"name": "BOULANGERIE DU PORT"}, "Boulangerie") == "Boulangerie du Port"
     urls = sum(sm.count("<url>") for sm in site.bakery_sitemaps())
     assert urls == sum(len(site.shops(code)) for code in site.communes)
+
+
+def test_seo_basics(site):
+    """Real <h1> and labels without JavaScript; titles and descriptions within search engine limits; IndexNow key."""
+    import re
+    from pipeline.config import INDEXNOW_KEY
+    home = site.home_page((ROOT / "public" / "index.html").read_text())
+    assert re.search(r"<h1[^>]*><span[^>]*>Fournyl</span>", home)
+    assert len(re.search(r"<title>(.*?)</title>", home).group(1)) <= 70
+    pages = [home, site.dep_page("44"), site.commune_page("44043")] + [site.bakery_page("44043", b) for b in site.shops("44043")]
+    for page in pages:
+        desc = html.unescape(re.search(r'name="description" content="(.*?)"', page).group(1))
+        assert 50 <= len(desc) <= 160, desc
+    assert (ROOT / "public" / f"{INDEXNOW_KEY}.txt").read_text() == INDEXNOW_KEY
