@@ -43,6 +43,40 @@ def commune_path(dep_name: str, name: str, code: str) -> str:
     return f"{slugify(dep_name)}/{slugify(name)}-{code.lower()}/"
 
 
+SMALL_WORDS = {"de", "du", "des", "la", "le", "les", "et", "à", "a", "aux", "au", "en", "sur", "sous", "d", "l", "par", "dans", "est", "avec", "chez", "pour", "ou"}
+DAY_RULE = re.compile(r"^(Mo|Tu|We|Th|Fr|Sa|Su|PH)([-,](Mo|Tu|We|Th|Fr|Sa|Su|PH))* \d\d:\d\d-\d\d:\d\d(,\d\d:\d\d-\d\d:\d\d)*$")
+HYGIENE_WORDS = {1: "très satisfaisante", 2: "satisfaisante", 3: "à améliorer", 4: "à corriger de manière urgente"}
+MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+
+
+def nice_name(name: str) -> str:
+    """SIRENE writes names in capitals: 'BOULANGERIE DU PORT' -> 'Boulangerie du Port'; mixed case is kept."""
+    if not name or not name.isupper():
+        return name
+    words = name.lower().split()
+    out = []
+    for i, w in enumerate(words):
+        if "'" in w:
+            head, tail = w.split("'", 1)
+            out.append(f"{head if i else head.capitalize()}'{tail.capitalize()}")
+        elif i and w in SMALL_WORDS:
+            out.append(w)
+        else:
+            out.append("-".join(x.capitalize() for x in w.split("-")))
+    return " ".join(out)
+
+
+def shop_label(b: dict, kind: str) -> str:
+    """'Boulangerie Frangins'; the kind is not repeated when the name already starts with it."""
+    if not b.get("name"):
+        return f"{kind} {b.get('address') or ''}".strip()
+    name = nice_name(b["name"])
+    plain = unicodedata.normalize("NFD", name.lower()).encode("ascii", "ignore").decode()
+    if plain.startswith(("boulang", "patiss", "fournil", "maison", "au ", "aux ", "le ", "la ", "les ", "l'")):
+        return name
+    return f"{kind} {name}"
+
+
 def bakery_slug(b: dict) -> str:
     """Mirror of bakerySlug in src/lib/slug.js: 'frangins-a15fb72f9c/' (a shop without a known name: its kind)."""
     name = b.get("name") or ("patisserie" if b.get("kind") == "pastry" else "boulangerie")
@@ -187,7 +221,14 @@ class Site:
             (dep_name, SITE_URL + dep_path(dep_name)),
             (c["name"], canonical),
         ]))
-        raw = {"footer": self.footer(), "analytics": analytics_tag(), "seo": seo}
+        shops = self.shops(code)
+        links = "".join(
+            f'<li><a href="{html.escape(self.bakery_path(code, b), quote=True)}">'
+            f'{html.escape(shop_label(b, t["page.bread.pastry"] if b["kind"] == "pastry" else t["page.bread.bakery"]))}</a></li>'
+            for b in shops
+        )
+        shops_html = f'<h2>{html.escape(_fill(t["seo.commune.shops"], commune=c["name"]))}</h2><ul>{links}</ul>' if shops else ""
+        raw = {"footer": self.footer(), "analytics": analytics_tag(), "seo": seo, "shops": shops_html}
         return re.sub(
             r"\{\{(\w+)\}\}",
             lambda m: raw[m.group(1)] if m.group(1) in raw else html.escape(str(params[m.group(1)]), quote=True),
@@ -205,37 +246,122 @@ class Site:
         c = self.communes[code]
         return commune_path(self.dep_names[c["dep"]], c["name"], code) + bakery_slug(b)
 
+    def bakery_facts(self, b: dict) -> list[str]:
+        """Short facts for the meta description, most telling first."""
+        t = self.t
+        facts = []
+        if b.get("created"):
+            facts.append(_fill(t["seo.bakery.since"], year=b["created"][:4]))
+        if b.get("hyg") and b.get("hyg_date"):
+            y, m = b["hyg_date"].split("-")
+            facts.append(_fill(t["seo.bakery.hygiene"], level=HYGIENE_WORDS[b["hyg"]], date=f"{MONTHS[int(m) - 1]} {y}"))
+        n = len(b.get("near") or [])
+        facts.append(t["seo.bakery.nearNone"] if n == 0 else t["seo.bakery.nearOne"] if n == 1 else _fill(t["seo.bakery.near"], n=n))
+        if b.get("accounts"):
+            facts.append(_fill(t["seo.bakery.revenue"], revenue=f"{_int(b['accounts']['revenue'])} €", year=b["accounts"]["closed"][:4]))
+        if b.get("history"):
+            k = len(b["history"])
+            facts.append(t["seo.bakery.historyOne"] if k == 1 else _fill(t["seo.bakery.history"], n=k))
+        return facts
+
+    def bakery_static(self, b: dict, label: str, kind: str, c: dict, cpath: str) -> str:
+        """The page content as plain HTML (before src/boulangerie.js renders the full page): for search engines,
+        and links to the competitors and the commune (internal linking)."""
+        t = self.t
+        e = lambda v: html.escape(str(v), quote=True)  # noqa: E731
+        rows = []
+        if b.get("created"):
+            y, m = b["created"].split("-")
+            rows.append((t["bakery.since"], f"{MONTHS[int(m) - 1]} {y}"))
+        if b.get("legal"):
+            rows.append((t["bakery.legal"], b["legal"]))
+        if b.get("staff"):
+            rows.append((t["bakery.staff"], b["staff"]))
+        if b.get("accounts"):
+            rows.append((t["bakery.revenue"], f"{_int(b['accounts']['revenue'])} € ({b['accounts']['closed'][:4]})"))
+        if b.get("hyg") and b.get("hyg_date"):
+            y, m = b["hyg_date"].split("-")
+            rows.append((t["bakery.hygiene"], f"{HYGIENE_WORDS[b['hyg']]} ({MONTHS[int(m) - 1]} {y})"))
+        osm = b.get("osm") or {}
+        if osm.get("hours"):
+            rows.append((t["bakery.hours"], osm["hours"]))
+        if osm.get("phone"):
+            rows.append((t["bakery.phone"], osm["phone"]))
+        facts = "".join(f"<dt>{e(k)}</dt><dd>{e(v)}</dd>" for k, v in rows)
+        near = "".join(
+            f'<li>{f"""<a href="{e(n["path"])}">{e(nice_name(n["name"]) if n.get("name") else t["page.bread.noName"])}</a>""" if n.get("path") else e(nice_name(n["name"]) if n.get("name") else t["page.bread.noName"])}'
+            f' – {e(t["page.bread." + n["kind"]])}, {_int(n["m"])} m</li>'
+            for n in b.get("near") or []
+        )
+        hist = "".join(
+            f"<li>{e(h.get('from') or '?')} – {e(h['to'])} : {e(nice_name(h['name']) if h.get('name') else t['page.bread.noName'])}</li>"
+            for h in b.get("history") or []
+        )
+        return (
+            f'<h1 class="page-title">{e(label)}</h1>'
+            f'<p class="page-lead">{e(kind)} · {e(b.get("address") or "")}, {e(b.get("cp") or c["cp"])} {e(c["name"])}</p>'
+            f'<dl class="seo-facts">{facts}</dl>'
+            + (f'<h2>{e(t["bakery.near"])}</h2><ul>{near}</ul>' if near else "")
+            + (f'<h2>{e(t["bakery.history"])}</h2><ul>{hist}</ul>' if hist else "")
+            + f'<p><a href="{e(cpath)}">{e(_fill(t["seo.bakery.communeLink"], commune=c["name"]))}</a></p>'
+        )
+
     def bakery_page(self, code: str, b: dict) -> str:
-        """One bakery: static shell with its SEO tags; src/boulangerie.js renders the page from the data."""
+        """One bakery: static content and SEO tags; src/boulangerie.js renders the full page from the data."""
         c = self.communes[code]
         t = self.t
         dep_name = self.dep_names[c["dep"]]
         kind = t["page.bread.pastry"] if b["kind"] == "pastry" else t["page.bread.bakery"]
-        name = b["name"] or f"{kind} · {b['address']}"
-        since = b["created"][:4] if b.get("created") else "?"
-        title = _fill(t["seo.bakery.title"], name=name, kind=kind.lower(), commune=c["name"], cp=b.get("cp") or c["cp"])
-        description = _fill(t["seo.bakery.description"], kind=kind, address=b["address"], cp=b.get("cp") or c["cp"], commune=c["name"], since=since)
+        label = shop_label(b, kind)
+        cp = b.get("cp") or c["cp"]
+        title = _fill(t["seo.bakery.title"], label=label, commune=c["name"])
+        description = _fill(t["seo.bakery.description"], label=label, address=b.get("address") or "", cp=cp, commune=c["name"],
+                            facts=", ".join(self.bakery_facts(b)))
         canonical = SITE_URL + self.bakery_path(code, b)
         cpath = commune_path(dep_name, c["name"], code)
         params = {
             "base": "../../../", "title": title, "description": description, "canonical": canonical, "code": code, "id": b["id"],
-            "name": name, "commune": c["name"], "commune_path": cpath, "dep_name": dep_name, "dep_path": dep_path(dep_name),
+            "name": label, "commune": c["name"], "commune_path": cpath, "dep_name": dep_name, "dep_path": dep_path(dep_name),
             "t_france": t["map.france"], "t_breadcrumb": t["map.breadcrumb"],
         }
         seo = self.social(title, description, canonical) + "\n  " + json_ld(breadcrumb([
-            ("France", SITE_URL), (dep_name, SITE_URL + dep_path(dep_name)), (c["name"], SITE_URL + cpath), (name, canonical),
+            ("France", SITE_URL), (dep_name, SITE_URL + dep_path(dep_name)), (c["name"], SITE_URL + cpath), (label, canonical),
         ]))
-        seo += "\n  " + json_ld({
-                "@context": "https://schema.org", "@type": "Bakery", "name": name, "url": canonical,
-                "address": {"@type": "PostalAddress", "streetAddress": b["address"], "postalCode": b.get("cp"), "addressLocality": c["name"], "addressCountry": "FR"},
-                "geo": {"@type": "GeoCoordinates", "latitude": b["lat"], "longitude": b["lon"]},
-            })
-        raw = {"footer": self.footer(), "analytics": analytics_tag(), "seo": seo}
+        seo += "\n  " + json_ld(self.bakery_ld(b, label, c, canonical))
+        raw = {"footer": self.footer(), "analytics": analytics_tag(), "seo": seo, "static": self.bakery_static(b, label, kind, c, cpath)}
         return re.sub(
             r"\{\{(\w+)\}\}",
             lambda m: raw[m.group(1)] if m.group(1) in raw else html.escape(str(params[m.group(1)]), quote=True),
             self.bakery_template,
         )
+
+    def bakery_ld(self, b: dict, label: str, c: dict, url: str) -> dict:
+        """schema.org Bakery: what search engines show in a local result (address, map, hours, phone, site)."""
+        osm = b.get("osm") or {}
+        ld = {
+            "@context": "https://schema.org",
+            "@type": "Bakery",
+            "name": label,
+            "url": url,
+            "description": _fill(self.t["seo.bakery.description"], label=label, address=b.get("address") or "", cp=b.get("cp") or c["cp"],
+                                 commune=c["name"], facts=", ".join(self.bakery_facts(b))),
+            "address": {"@type": "PostalAddress", "streetAddress": b.get("address"), "postalCode": b.get("cp") or c["cp"],
+                        "addressLocality": c["name"], "addressCountry": "FR"},
+            "geo": {"@type": "GeoCoordinates", "latitude": b["lat"], "longitude": b["lon"]},
+            "containedInPlace": {"@type": "City", "name": c["name"]},
+            "image": SITE_URL + "img/og.png",
+        }
+        if b.get("created"):
+            ld["foundingDate"] = b["created"]
+        if osm.get("phone"):
+            ld["telephone"] = osm["phone"]
+        if osm.get("website"):
+            ld["sameAs"] = [osm["website"]]
+        # OpenStreetMap hours already use the schema.org syntax ("Mo-Sa 07:00-19:30"); only simple rules are kept.
+        rules = [r.strip() for r in (osm.get("hours") or "").split(";") if r.strip()]
+        if rules and all(DAY_RULE.match(r) for r in rules):
+            ld["openingHours"] = rules
+        return ld
 
     def social(self, title: str, description: str, url: str) -> str:
         """Open Graph and Twitter tags: the preview shown when a page is shared."""

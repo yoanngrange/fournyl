@@ -124,5 +124,15 @@ def test_bakery_pages(site):
     page = site.route(site.bakery_path("44043", shops[0]))
     assert page and 'name="fournyl-bakery"' in page and "{{" not in page
     assert '"@type":"Bakery"' in page and "noindex" not in page
+    import re as _re
+    title = _re.search(r"<title>(.*?)</title>", page).group(1)
+    assert " – Création ou reprise de boulangerie – Étude de marché – Fournyl" in title and not title.isupper()
+    assert 'class="seo-facts"' in page and 'href="loire-atlantique/clisson-44043/"' in page  # content and link to the commune
+    commune = site.commune_page("44043")
+    assert site.bakery_path("44043", shops[0]) in commune  # the commune page links to its bakeries
+    from pipeline.pages import nice_name, shop_label
+    assert nice_name("L'AMOUR EST DANS LE BLE") == "L'Amour est dans le Ble"
+    assert shop_label({"name": "FRANGINS"}, "Boulangerie") == "Boulangerie Frangins"
+    assert shop_label({"name": "BOULANGERIE DU PORT"}, "Boulangerie") == "Boulangerie du Port"
     urls = sum(sm.count("<url>") for sm in site.bakery_sitemaps())
     assert urls == sum(len(site.shops(code)) for code in site.communes)
