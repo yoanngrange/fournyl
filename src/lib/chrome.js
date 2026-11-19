@@ -21,7 +21,7 @@ export function addChrome() {
     'beforebegin',
     `<header class="doc-top"><div class="doc-top-inner">
       <a class="brand-link" href="./"><img class="brand-mark" src="img/mark.svg" alt="" width="32" height="32"><span class="brand-name">${t['app.name']}</span></a>
-      <span class="doc-top-links"><a href="./">${t['sources.back']}</a><a class="basket-link" href="panier/" data-basket-link>${t['basket.link']}</a>${helpLink('', t['help.link'])}</span>
+      <span class="doc-top-links"><a class="doc-top-back" href="./">${t['sources.back']}</a><a class="basket-link" href="panier/" data-basket-link>${t['basket.link']}</a>${helpLink('', t['help.link'])}</span>
     </div></header>`,
   );
   main.insertAdjacentHTML('afterend', footerHTML());

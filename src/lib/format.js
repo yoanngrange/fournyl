@@ -58,3 +58,6 @@ export function fmtPostcode(cp) {
 /** The "?" that replaces explanations in the interface: a link to the matching part of the help page. */
 export const helpLink = (anchor, topic, cls = '') =>
   `<a class="help-q${cls ? ` ${cls}` : ''}" href="aide/${anchor ? `#${anchor}` : ''}" aria-label="${tr('help.q', { topic })}" title="${tr('help.q', { topic })}">?</a>`;
+
+/** " is-text" for a value written in words ("aucune", "non diffusé"): shown smaller, on one line, not as a big figure. */
+export const textClass = (value) => (/\d/.test(String(value ?? '').replace(/<[^>]*>/g, '')) ? '' : ' is-text');

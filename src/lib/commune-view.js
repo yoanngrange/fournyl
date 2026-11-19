@@ -3,7 +3,7 @@
 import * as maplibregl from '../../vendor/maplibre-gl-6.11.2/maplibre-gl.mjs';
 import t from '../i18n/fr.js';
 import { BIN_COLOURS, CRITERIA, WEIGHTS, bin, category, score } from './scoring.js';
-import { fmtCriterion, fmtEuro, fmtInt, fmtPct, fmtSigned, helpLink, tr } from './format.js';
+import { fmtCriterion, fmtEuro, fmtInt, fmtPct, fmtSigned, helpLink, textClass, tr } from './format.js';
 import { depPath } from './slug.js';
 import { basketButton } from './basket.js';
 
@@ -12,9 +12,10 @@ export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({ '&': '&a
 const pct1 = (x) => (x == null ? '—' : `${x.toFixed(1).replace('.', ',')} %`);
 
 const row = (label, value, hint = '') =>
-  `<div class="pg-row"><span>${label}${hint ? ` <small>${hint}</small>` : ''}</span><b>${value}</b></div>`;
+  `<div class="pg-row"><span>${label}${hint ? ` <small>${hint}</small>` : ''}</span><b class="${textClass(value).trim()}">${value}</b></div>`;
+/** One figure of a figures grid (<dl class="pg-tiles">): label, value, and an optional note (year, unit). */
 const tile = (label, value, sub = '') =>
-  `<div class="pg-tile"><span>${label}</span><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  `<div class="pg-tile"><dt>${label}</dt><dd class="pg-tile-v${textClass(value)}">${value}</dd>${sub ? `<dd class="pg-tile-sub">${sub}</dd>` : ''}</div>`;
 /** Parts of a block side by side on wide screens (one column each), stacked on phones. */
 const cols = (...parts) => `<div class="pg-cols">${parts.filter(Boolean).map((x) => `<div>${x}</div>`).join('')}</div>`;
 
@@ -229,10 +230,10 @@ function competition(p, fonds, depName) {
   // No bakery: one statement and where the nearest one is, instead of two tiles both saying "aucune".
   const closest = p.nearby.filter((n) => n.code !== p.code && n.bakeries).sort((a, b) => a.km - b.km)[0];
   const head = p.bakeries
-    ? `<div class="pg-tiles is-2">
+    ? `<dl class="pg-tiles is-2">
       ${tile(t['card.bakeries'], fmtInt(p.bakeries))}
       ${tile(t['card.perBakery'], fmtInt(p.pop / p.bakeries))}
-    </div>`
+    </dl>`
     : `<div class="pg-none">
       <b>${t['page.noBakery']}</b>
       ${closest ? `<span>${tr('page.noBakery.closest', { name: esc(closest.name), km: closest.km.toFixed(1).replace('.', ',') })}</span>` : ''}
@@ -303,12 +304,12 @@ function safetyServices(p) {
     .map((k) => row(t[`svc.${k}`], a[k] ? fmtInt(a[k]) : t['card.none']))
     .join('');
   return cols(
-    `<div class="pg-tiles is-1">${tile(
+    `<dl class="pg-tiles is-1">${tile(
       t['card.crime'],
       crime.v == null ? t['card.notPublished'] : `${fmtCriterion('crime', crime.v)} ‰`,
       crime.pct == null ? t['card.crime.sub'] : tr('page.crimeRank', { p: Math.round(crime.pct / 10) }),
-    )}</div>`,
-    `<h3>${t['page.services']}</h3>${svc}${row(t['svc.market'], t['page.market.none'])}`,
+    )}</dl>`,
+    `<h3>${t['page.services']}</h3>${svc}`,
   );
 }
 
@@ -321,10 +322,20 @@ function politics(pol, year) {
     pol.list ? row(t['card.nuance'], nuance(pol.nuance)) : '',
   ].join('');
   // Mayor first, then one column per round.
-  const rounds = pol.rounds.map(
-    (r) => `<h3>${tr('card.round', { year, n: r.round === 1 ? '1er' : '2nd', turnout: pct1(r.turnout) })}</h3>
-      ${r.lists.map((l) => bar(`${esc(l.name)} <small>${nuance(l.nuance)}</small>`, l.pct, l.pct || 0, pct1(l.pct))).join('')}`,
-  );
+  // A single list always has 100 % of valid votes: show its share of registered voters instead, and the
+  // blank and null ballots (the votes cast against it).
+  const rounds = pol.rounds.map((r) => {
+    const single = r.lists.length === 1;
+    const lists = r.lists
+      .map((l) =>
+        single && l.pct_reg != null
+          ? bar(`${esc(l.name)} <small>${t['card.singleList']} · ${nuance(l.nuance)}</small>`, l.pct_reg, l.pct_reg, tr('card.ofRegistered', { p: pct1(l.pct_reg) }))
+          : bar(`${esc(l.name)} <small>${nuance(l.nuance)}</small>`, l.pct, l.pct || 0, pct1(l.pct)),
+      )
+      .join('');
+    const blank = r.blank_null == null ? '' : row(t['card.blankNull'], tr('card.ofVoters', { p: pct1(r.blank_null) }));
+    return `<h3>${tr('card.round', { year, n: r.round === 1 ? '1er' : '2nd', turnout: pct1(r.turnout) })}</h3>${lists}${blank}`;
+  });
   return cols(head, ...rounds);
 }
 
@@ -346,7 +357,7 @@ function bbox(geometry) {
 }
 
 /** The commune and its neighbours, neighbours shaded by whether they have a bakery. */
-async function locator(el, p, mapOptions = {}) {
+export async function locator(el, p, mapOptions = {}) {
   const deps = [...new Set([p.dep, ...p.neighbours.map((n) => n.code.slice(0, 2))])];
   const geos = await Promise.all(deps.map((d) => getJSON(`geo/${d}.geojson`).catch(() => null)));
   const kinds = new Map([[p.code, 'here'], ...p.neighbours.map((n) => [n.code, n.bakeries ? 'with' : 'without'])]);
@@ -407,12 +418,12 @@ const postcodes = (list = []) =>
 const IGN_PLAN =
   'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2' +
   '&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png';
-const KIND_COLOURS = { bakery: '#FF0000', pastry: '#E08A5A', bake_off: '#1E3F8A', retail: '#8A8172' };
+export const KIND_COLOURS = { bakery: '#FF0000', pastry: '#E08A5A', bake_off: '#1E3F8A', retail: '#8A8172' };
 
 const monthYear = (ym) => new Date(`${ym}-01T12:00:00`).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
 /** Alim'Confiance publishes a result for one year: one older than that (data built a while ago) is not shown. */
-function hygiene(b) {
+export function hygiene(b) {
   if (!b.hyg || !b.hyg_date) return null;
   const limit = new Date();
   limit.setFullYear(limit.getFullYear() - 1);
@@ -466,7 +477,7 @@ function disc(lon, lat, km, steps = 96) {
   return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [ring] } };
 }
 
-function breadMap(el, p, { print = false, ...mapOptions } = {}) {
+export function breadMap(el, p, { print = false, ...mapOptions } = {}) {
   if (!p.bread_points.length) return null;
   const area = disc(p.lon, p.lat, BREAD_RADIUS_KM);
   const ring = area.geometry.coordinates[0];
@@ -579,14 +590,14 @@ export function communeHTML(p, meta, fonds, { idp = '', actions = true, inBasket
           <a class="pg-button" href="${depPath(p.dep_name)}?c=${p.code}#carte=11/${p.lat}/${p.lon}">${t['page.openMap']}</a>
           ${basketButton(inBasket)}
         </div>` : ''}
-        <div class="pg-tiles">
+        <dl class="pg-tiles">
           ${tile(t['card.inhabitants'], fmtInt(p.pop), tr('card.inYear', { year: y.census }))}
           ${tile(t['card.growthYearly'], fmtSigned(p.criteria.growth.v), tr('card.fromTo', { from: y.growth_from, to: y.census }))}
           ${tile(t['card.bakeries'], p.bakeries ? fmtInt(p.bakeries) : t['card.none'], tr('card.inYear', { year: y.bpe }))}
           ${tile(t['card.perBakery'], p.bakeries ? fmtInt(p.pop / p.bakeries) : t['card.noBakery'])}
           ${tile(t['card.income'], fmtCriterion('income', p.income.median), t['card.income.sub'])}
           ${tile(t['card.crime'], p.criteria.crime.v == null ? t['card.notPublished'] : `${fmtCriterion('crime', p.criteria.crime.v)} ‰`, t['card.crime.sub'])}
-        </div>
+        </dl>
       </div>
       <figure class="pg-locator">
         <div class="pg-locator-map" id="${idp}locator" role="img" aria-label="${esc(t['page.locator'])}"></div>
@@ -634,7 +645,7 @@ const settle = (map, ms) =>
  * Replaces a live map by a picture of it, its markers laid on top in percentages, so the sheet prints
  * at any width and the WebGL context is released (browsers keep only ~16 at a time).
  */
-async function freeze(el, made, note = '') {
+export async function freeze(el, made, note = '') {
   if (!made) return;
   const { map, markers } = made;
   await settle(map, 10000);

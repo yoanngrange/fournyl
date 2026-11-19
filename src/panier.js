@@ -7,6 +7,7 @@ import { BIN_COLOURS, WEIGHTS, bin, category, score } from './lib/scoring.js';
 import { fmtCriterion, fmtInt, fmtPostcode, fmtSigned, tr } from './lib/format.js';
 import { MAX_BASKET, readBasket, toggleBasket } from './lib/basket.js';
 import { communeHTML, getJSON, wireCommune } from './lib/commune-view.js';
+import { compareHTML, wireCompare } from './lib/compare-view.js';
 import { communePath } from './lib/slug.js';
 import { addChrome } from './lib/chrome.js';
 
@@ -86,27 +87,31 @@ async function start() {
     exporting = true;
     button.disabled = true;
     const list = basket();
-    const compared = list;
     try {
       const [meta, fonds] = await Promise.all([getJSON('meta.json'), getJSON('fonds.json')]);
       const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
       const stamp = (c) => `<p class="print-meta">${tr('basket.printMeta', { url: `fournyl.com/${communePath(c.depName, c.name, c.code)}`, date })}</p>`;
       printDoc.replaceChildren();
-      if (compared.length > 1) {
-        printDoc.insertAdjacentHTML(
-          'beforeend',
-          `<section class="print-sheet print-compare doc-main"><p class="print-meta">${tr('basket.printMeta', { url: 'fournyl.com/panier/', date })}</p>
-            <h1>${t['basket.printCompare']}</h1>${compareTable(compared, { links: false })}</section>`,
-        );
-      }
+      const pages = [];
       for (const [i, c] of list.entries()) {
         status.textContent = tr('basket.exporting', { i: i + 1, n: list.length });
-        const p = await getJSON(`commune/${c.code}.json`);
+        pages.push(await getJSON(`commune/${c.code}.json`));
+      }
+      if (list.length > 1) {
+        // 2 to 5 communes: every theme confronted side by side, in landscape.
+        const doc = document.createElement('article');
+        doc.className = 'print-sheet print-compare doc-main';
+        doc.innerHTML = `<p class="print-meta">${tr('basket.printMeta', { url: 'fournyl.com/panier/', date })}</p>
+          <h1>${t['basket.cmp.title']}</h1>
+          ${compareHTML(pages, meta, fonds)}`;
+        printDoc.append(doc);
+        await wireCompare(doc, pages);
+      } else {
         const sheet = document.createElement('article');
         sheet.className = 'print-sheet page-main';
-        sheet.innerHTML = stamp(c) + communeHTML(p, meta, fonds, { idp: `c${c.code}-`, actions: false });
+        sheet.innerHTML = stamp(list[0]) + communeHTML(pages[0], meta, fonds, { idp: `c${list[0].code}-`, actions: false });
         printDoc.append(sheet);
-        await wireCommune(sheet, p, { print: true });
+        await wireCommune(sheet, pages[0], { print: true });
       }
       status.textContent = t['basket.exportReady'];
       const title = document.title;
