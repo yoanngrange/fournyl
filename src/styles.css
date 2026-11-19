@@ -538,7 +538,7 @@ body.page { height: auto; background: var(--paper); overflow-x: clip; }
 .map-label.is-here { font-size: 13px; font-weight: 700; }
 /* Every block uses the full width; inside, its parts sit side by side (.pg-cols) and stack on narrow screens. */
 .pg-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; margin-top: 28px; }
-.pg-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 22px 40px; align-items: start; }
+.pg-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 32px 40px; align-items: start; }
 .pg-cols > div { min-width: 0; }
 .pg-cols > div > h3:first-child, .pg-cols > div > .pg-tiles:first-child { margin-top: 0; }
 .pg-why-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 0 40px; }
@@ -547,7 +547,8 @@ body.page { height: auto; background: var(--paper); overflow-x: clip; }
 .pg-card h2 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 800; font-size: 28px; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1; }
 .pg-card h2:has(.help-q) { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .pg-card h2 .help-q { top: 0; margin-left: 0; }
-.pg-card h3 { margin: 18px 0 6px; }
+/* Sub-headings open a new group: clear space above, so they never read as part of the figures before them. */
+.pg-card h3 { margin: 28px 0 8px; }
 .pg-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: var(--line-soft); font-size: 14px; }
 .pg-row small { color: var(--ink-3); font-size: 12px; }
 .pg-row b { font-family: var(--font-num); text-align: right; }
