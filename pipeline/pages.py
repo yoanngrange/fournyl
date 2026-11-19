@@ -353,6 +353,9 @@ class Site:
 </html>
 """
 
+    def bakery_count(self) -> int:
+        return sum(len(self.shops(code)) for code in self.communes)
+
     def bakery_sitemaps(self) -> list[str]:
         """Every bakery page, in files of SITEMAP_MAX URLs."""
         urls = [SITE_URL + self.bakery_path(code, b) for code in sorted(self.communes) for b in self.shops(code)]
@@ -363,6 +366,12 @@ class Site:
         lastmod = f"<lastmod>{day}</lastmod>" if day else ""
         body = "\n".join(f"  <url><loc>{html.escape(u)}</loc>{lastmod}</url>" for u in urls)
         return f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{body}\n</urlset>\n'
+
+    def sitemap_index(self, files: list[str]) -> str:
+        day = self.built_at[:10]
+        lastmod = f"<lastmod>{day}</lastmod>" if day else ""
+        body = "\n".join(f"  <sitemap><loc>{SITE_URL}{f}</loc>{lastmod}</sitemap>" for f in files)
+        return f'<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{body}\n</sitemapindex>\n'
 
     def sitemap(self) -> str:
         urls = [SITE_URL, SITE_URL + "aide/"]
@@ -391,8 +400,10 @@ The score combines five criteria, each ranked against all French communes: inhab
 (weight 2: older shops are more likely to be sold soon) and recorded crime (weight 1).
 Missing values (statistical secrecy) are left out and the weights re-normalised; small communes are pulled
 towards the middle for income and growth. 60 and above is "favourable", below 40 "unfavourable".
-Data comes from Insee (census, BPE, Filosofi, Sirene), the Ministry of the Interior, La Poste, IGN and
-BODACC, and is rebuilt every month. The site is in French, free, with no account and no ads. It is
+Data comes from Insee (census, BPE, Filosofi, Sirene), the Ministry of the Interior, La Poste, IGN,
+BODACC, INPI (published accounts), Alim'Confiance (hygiene inspections), the regional health agencies (tap
+water hardness), Géorisques (natural risks), Accès Libre (accessibility) and OpenStreetMap (opening hours,
+© OpenStreetMap contributors, ODbL), and is rebuilt every month. The site is in French, free, with no account and no ads. It is
 published by the association Vraie Forêt (Nantes, France).
 
 ## Main pages
@@ -400,9 +411,17 @@ published by the association Vraie Forêt (Nantes, France).
 - [Map of France]({SITE_URL}): every commune coloured by score, filters, and an "En tournée" mode for a
   bakehouse delivering several villages.
 - [Help]({SITE_URL}aide/): how the score is computed, data sources and update schedule, limits, terms, legal notice, privacy.
-- [Sitemap]({SITE_URL}sitemap.xml): one page per commune, for example
-  {SITE_URL}loire-atlantique/clisson-44043/ (population, bakeries and competition within 5 and 10 km,
-  takeovers, price of bakery businesses, demography, local economy).
+- [Sitemap]({SITE_URL}sitemap.xml): every page below.
+- Commune pages ({_int(len(self.communes))}), for example {SITE_URL}loire-atlantique/clisson-44043/: score and its
+  criteria, demography, bakeries and competition within 5 and 10 km with a map of every point of sale of bread,
+  takeovers since 2016, price of bakery businesses, tap water hardness, local economy, income, safety, politics.
+- Bakery pages ({_int(self.bakery_count())}), one per bakery and pastry shop, for example
+  {SITE_URL}loire-atlantique/clisson-44043/frangins-a15fb72f9c/: address, since when the current operator runs
+  it, legal form, staff, published revenue and net income when filed, latest hygiene inspection, opening hours
+  and contact, the previous operators at the same place, competitors within 2 km, facilities within 500 m,
+  accessibility, the commune's natural risks and climate exposure, tap water. A sole trader is never named;
+  nothing is shown about company directors.
+- [Basket]({SITE_URL}panier/): up to 5 communes compared theme by theme in one PDF market study.
 
 ## Départements
 
@@ -456,12 +475,14 @@ published by the association Vraie Forêt (Nantes, France).
                     page = page.replace("</head>", f'  <link rel="canonical" href="{url}">\n</head>', 1)
                 f.write_text(page, encoding="utf-8")
         _put(site / "404.html", self.not_found_page())
-        _put(site / "sitemap.xml", self.sitemap())
-        maps = ["sitemap.xml"]
+        # sitemap.xml is an index: submitting it alone (Search Console, Bing) covers every page.
+        maps = ["sitemap-pages.xml"]
+        _put(site / maps[0], self.sitemap())
         for i, chunk in enumerate(self.bakery_sitemaps(), start=1):
             maps.append(f"sitemap-boulangeries-{i}.xml")
             _put(site / maps[-1], chunk)
-        _put(site / "robots.txt", "User-agent: *\nAllow: /\n\n" + "".join(f"Sitemap: {SITE_URL}{m}\n" for m in maps))
+        _put(site / "sitemap.xml", self.sitemap_index(maps))
+        _put(site / "robots.txt", f"User-agent: *\nAllow: /\n\nSitemap: {SITE_URL}sitemap.xml\n")
         _put(site / "llms.txt", self.llms_txt())
         return n
 
