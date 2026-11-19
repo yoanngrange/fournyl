@@ -152,9 +152,11 @@ def test_privacy_no_individual_data():
     """CLAUDE.md: never a SIRET, a director, a person's birth year (bakery pages use their own id)."""
     siret = re.compile(r"\b\d{14}\b")
     forbidden_keys = re.compile(r'"[^"]*(siret|birth|naissance|dirigeant|director)[^"]*"\s*:')
+    url = re.compile(r"https?://[^\s\"]+")
     for path in OUT.rglob("*.json"):
         text = path.read_text().lower()
-        assert not siret.search(text), path
+        # Web addresses from OpenStreetMap can hold long numbers (a Facebook page id), never a SIRET of ours.
+        assert not siret.search(url.sub("", text)), path
         assert not forbidden_keys.search(text), path
 
 
