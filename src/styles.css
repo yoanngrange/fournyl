@@ -678,6 +678,14 @@ body.page { height: auto; background: var(--paper); overflow-x: clip; }
 /* Bakery page */
 .bk-shop { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 .bk-map-wrap { margin: 0; }
+.bk-transit .pg-row { align-items: baseline; }
+.bk-transit .pg-row > span small { display: block; }
+.bk-lines { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+@media (max-width: 560px) {
+  .bk-transit .pg-row { flex-direction: column; gap: 6px; }
+  .bk-lines { justify-content: flex-start; }
+}
+.bk-line { display: inline-block; min-width: 26px; padding: 1px 6px; border: 1.5px solid var(--ink); font-family: var(--font-num); font-size: 13px; font-weight: 700; text-align: center; background: var(--paper-2); }
 .bk-map { height: 380px; border: var(--line); }
 .bk-map-wrap .pg-legend { margin-top: 8px; }
 .pg-legend i.is-here { width: 14px; height: 14px; border: 2px solid var(--paper-2); box-shadow: 0 0 0 2px var(--ink); background: var(--rouge); }

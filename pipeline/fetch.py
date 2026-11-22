@@ -120,6 +120,17 @@ def fetch(source_id: str, refresh: bool = False) -> dict:
         wikidata.download(target, sorted(cog.communes().dep.unique()))
         return _record(source_id, target, spec["url"], {})
 
+    if spec.get("custom") == "transit":  # hundreds of GTFS feeds reduced to one table
+        from pipeline import transit
+
+        RAW.mkdir(parents=True, exist_ok=True)
+        target = RAW / "transit.parquet"
+        print("  downloading GTFS feeds …", flush=True)
+        tmp = target.with_suffix(".part")
+        transit.download(tmp)
+        tmp.replace(target)
+        return _record(source_id, target, spec["url"], {})
+
     resolved = resolve_datagouv(spec["datagouv"]) if "datagouv" in spec else {"url": spec["url"]}
     url = resolved["url"]
     suffix = spec.get("suffix") or (".parquet" if url.endswith(".parquet") else ".csv" if url.endswith(".csv") else ".zip")

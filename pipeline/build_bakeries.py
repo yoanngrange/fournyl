@@ -8,16 +8,18 @@ Every page is indexed by search engines. Published accounts (INPI ratios) are sh
 """
 
 import math
+import re
 
 import numpy as np
 import pandas as pd
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
-from pipeline import cog, fetch
+from pipeline import cog, fetch, transit
 from pipeline.build_local import BREAD_KINDS, bakery_id, hygiene, legal_codes
 from pipeline.config import (
     BAKERY_NEAR_M, BAKERY_NEAR_MAX, BAKERY_PAGE_KINDS, FOOTFALL, FOOTFALL_M, HISTORY_NEAR_M, OSM_MATCH_M,
+    TRANSIT_M, TRANSIT_MAX_LINES, TRANSIT_SKIP_DEPS,
 )
 
 SOLE_TRADER = "1000"
@@ -304,6 +306,67 @@ def _footfall(pages: pd.DataFrame) -> dict[int, dict]:
     return out
 
 
+MODE_ORDER = {"train": 0, "metro": 1, "tram": 2, "bus": 3}
+
+
+def _line_key(line: str):
+    """Natural order: 2 before 10, numbers before letters (C1, C2…)."""
+    return [(0, int(p), "") if p.isdigit() else (1, 0, p) for p in re.findall(r"\d+|\D+", line.lower())]
+
+
+def _transit(pages: pd.DataFrame) -> dict[int, dict | None]:
+    """Public transport within TRANSIT_M of the shop: train stations by name, other lines grouped by network.
+
+    None (block hidden) where the data is known to be incomplete (TRANSIT_SKIP_DEPS) or the source is missing.
+    """
+    if not fetch.available("transit"):
+        return {}
+    s = pd.read_parquet(fetch.path("transit"))
+    sx, sy = _lambert(s.lon, s.lat)
+    near = _within(sx, sy, pages.x.to_numpy(), pages.y.to_numpy(), TRANSIT_M)
+    modes, networks, lines_, stops = (s[c].tolist() for c in ("mode", "network", "line", "stop"))
+    # A "train" stop is kept as a station only if the BPE lists a station within 300 m: some feeds code a
+    # coach or a tram stop as rail (Nantes Pirmil in the Aléop TER feed).
+    real = set()
+    if fetch.available("bpe_xy"):
+        g = pq.read_table(fetch.path("bpe_xy"), columns=["TYPEQU", "LAMBERT_X", "LAMBERT_Y", "EPSG"],
+                          filters=pc.field("TYPEQU").isin(FOOTFALL["stations"])).to_pandas()
+        g = g[(g.EPSG.astype(str) == "2154") & g.LAMBERT_X.notna()]
+        train = np.flatnonzero(s["mode"].to_numpy() == "train")
+        hits = _within(g.LAMBERT_X.astype(float).to_numpy(), g.LAMBERT_Y.astype(float).to_numpy(), sx[train], sy[train], 300)
+        real = {int(j) for j, h in zip(train, hits) if h}
+    norm_net = {n: transit.norm(n) for n in set(networks)}
+    out = {}
+    for (i, r), cands in zip(pages.iterrows(), near):
+        if str(r.home)[:2] in TRANSIT_SKIP_DEPS:
+            out[i] = None
+            continue
+        stations, kept, groups, seen = [], [], {}, set()
+        for j, _ in cands:  # nearest stops first
+            mode, network, line, stop = modes[j], networks[j], lines_[j], stops[j]
+            if mode == "train":  # one name per station: feeds name it "Clisson" or "Gare de Clisson"
+                if re.search(r"routi[eè]re", stop, re.I):  # a coach station next to the railway station
+                    continue
+                name = re.sub(r"^gare (de |d'|d’|du |des )?", "", stop, flags=re.I).strip()
+                if name and j in real and all(np.hypot(sx[j] - sx[k], sy[j] - sy[k]) > 300 for k in kept):
+                    stations.append(name[:1].upper() + name[1:])
+                    kept.append(j)
+                continue
+            key = (mode, norm_net[network], line.casefold())
+            if key in seen or len(seen) >= TRANSIT_MAX_LINES:
+                continue
+            seen.add(key)
+            groups.setdefault((mode, network), []).append(line)
+        out[i] = {
+            "stations": stations[:3],
+            "lines": [
+                {"mode": m, "network": n, "lines": sorted(lines, key=_line_key)}
+                for (m, n), lines in sorted(groups.items(), key=lambda kv: (MODE_ORDER[kv[0][0]], -len(kv[1]), kv[0][1]))
+            ],
+        }
+    return out
+
+
 def bakeries(codes: set[str]) -> dict[str, list[dict]]:
     """Per commune (INSEE code): its bakeries and pastry shops, each with what its page shows."""
     import geopandas as gpd  # heavy import kept local to this step
@@ -356,6 +419,7 @@ def bakeries(codes: set[str]) -> dict[str, list[dict]]:
     access = _access(shop_rows)
     history = _history(shop_rows)
     footfall = _footfall(shop_rows)
+    transit_near = _transit(shop_rows)
 
     out: dict[str, list[dict]] = {}
     for i in pages:
@@ -405,6 +469,7 @@ def bakeries(codes: set[str]) -> dict[str, list[dict]]:
                 "access": access.get(i),
                 "history": history.get(i, []),
                 "footfall": footfall.get(i),
+                "transit": transit_near.get(i),
             }
         )
     for lst in out.values():

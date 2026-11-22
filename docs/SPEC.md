@@ -157,9 +157,10 @@ Commune page: the points of sale list sorts by distance to the town hall (defaul
 (list arrow and map popup), with the path of its own commune: a shop within 5 km may sit in a neighbouring commune
 (`path` in `bread_points`, fixed Nov 22, 2026). Every page is indexed and in the sitemaps; a sole trader is never named (CLAUDE.md).
 Commune page, safety and services (Nov 22, 2026): collèges and lycées counted apart, as on bakery pages.
-*Planned (Yoann, Nov 22, 2026):* **Transports en commun à moins de 500 m** — the numbers of the bus, tram, metro
-and train lines with a stop within 500 m of the shop (GTFS feeds, national aggregate on transport.data.gouv.fr;
-details in PLAN.md).
+**Transports en commun à moins de 500 m** (Nov 22, 2026): train stations by name, then metro, tram, bus and coach
+lines grouped by network, as small line badges (GTFS feeds of transport.data.gouv.fr; rules in DATA.md). "Aucune
+ligne régulière" when none; the block is hidden in Bourgogne-Franche-Comté outside Saône-et-Loire, where the
+regional coaches are not published.
 
 ### 3.6 URLs (decided Oct 25, 2026)
 | Page | URL |
