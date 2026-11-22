@@ -90,10 +90,9 @@ Start every milestone on Loire-Atlantique (44), then generalise.
 - French copy review: done (Yoann, Nov 22, 2026).
 
 ## Next
-- **Public transport near each bakery** (bakery page): numbers of the bus, tram, metro and train lines with a stop
-  within 500 m of the shop, as on the "Ce qui attire du passage" block. Source to confirm: the GTFS feeds of
-  transport.data.gouv.fr (national stop and route aggregate), lines deduplicated by network + short name.
-  **Done when:** works on the 44 sample, lines shown with their network and the data's year, test on stop counts.
+- ~~Public transport near each bakery~~ *Done (Nov 22, 2026):* GTFS feeds of transport.data.gouv.fr, lines within
+  500 m grouped by network, stations by name; Bourgogne-Franche-Comté left out until its coaches are published
+  (an OpenStreetMap complement was considered and set aside).
 - **Payment:** Stripe for the basket study (1 € for 1 to 5 communes), invoice generated at payment, no account.
 
 ## Later

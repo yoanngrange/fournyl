@@ -264,6 +264,17 @@ SOURCES = {
         "licence": "Licence Ouverte",
         "page": "https://www.georisques.gouv.fr/donnees/bases-de-donnees/base-gaspar",
     },
+    "transit": {
+        "name": "Horaires théoriques des transports en commun (GTFS) : arrêts et lignes",
+        "producer": "Autorités organisatrices de la mobilité, via transport.data.gouv.fr",
+        "vintage": "fichiers en vigueur",
+        "url": "https://transport.data.gouv.fr/api/datasets",
+        "custom": "transit",  # ~480 feeds reduced to one table of stops and lines (pipeline/transit.py)
+        "suffix": ".parquet",
+        "optional": True,  # enrichment: the site is built without it if the download fails
+        "licence": "Licence Ouverte ou ODbL selon le réseau",
+        "page": "https://transport.data.gouv.fr/",
+    },
     "bpe_xy": {
         "name": "Base permanente des équipements — équipements géolocalisés",
         "producer": "Insee",
@@ -361,6 +372,18 @@ BAKERY_NEAR_M = 2_000  # competitors listed on a bakery page: other points of sa
 BAKERY_NEAR_MAX = 8
 HISTORY_NEAR_M = 15  # a closed point of sale of bread this close to a shop stood at the same place
 FOOTFALL_M = 500  # facilities that bring passers-by, counted around a bakery
+
+# --- Public transport near a bakery (GTFS, transport.data.gouv.fr) ---
+TRANSIT_CATALOGUE = "https://transport.data.gouv.fr/api/datasets"
+TRANSIT_M = 500  # lines with a stop within this distance of the shop
+# Feeds left out: on-demand transport (no fixed stops), school-only networks, seasonal shuttles, ferries, flights,
+# long-distance coaches and trains that stop in few places (not useful to a bakery's customers).
+TRANSIT_EXCLUDE = (r"\bTAD\b|à la demande|réseau scolaire|saisonni|estivale|hivernale|maritime|\bvols?\b|"
+                   r"européen|FlixBus|BlaBlaCar|Eurostar|Renfe|Trenitalia|aéroport")
+# Bourgogne-Franche-Comté: the regional coaches are published for Saône-et-Loire only (Nov 2026), so a shop elsewhere
+# in the region would wrongly show "no line". No transport block there until the region publishes them.
+TRANSIT_SKIP_DEPS = {"21", "25", "39", "58", "70", "89", "90"}
+TRANSIT_MAX_LINES = 30  # per bakery, nearest stops first (a shop in central Paris has hundreds)
 FOOTFALL = {  # BPE 2025 facility codes
     "schools": ["C107", "C108", "C109"],  # écoles maternelles, primaires, élémentaires
     "colleges": ["C201"],  # collèges

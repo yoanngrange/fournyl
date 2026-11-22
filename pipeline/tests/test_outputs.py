@@ -148,6 +148,26 @@ def test_bakery_pages(index, meta):
             assert h["to"] >= (h["from"] or 0) and h["kind"] in {"bakery", "pastry", "bake_off", "retail"}
 
 
+def test_bakery_transit(index, meta):
+    """Public transport within 500 m of each shop (GTFS): structure, no duplicate line, coverage of the sample."""
+    if not fetched(meta, "transit"):
+        pytest.skip("GTFS feeds not downloaded in this build (optional source)")
+    shops = [b for code in index["code"] if (OUT / "bakery" / f"{code}.json").exists() for b in load(f"bakery/{code}.json")]
+    for b in shops:
+        tr = b["transit"]
+        if tr is None:  # only where the regional coaches are not published (TRANSIT_SKIP_DEPS)
+            continue
+        assert set(tr) == {"stations", "lines"} and len(tr["stations"]) <= 3
+        assert sum(len(g["lines"]) for g in tr["lines"]) <= 30
+        for g in tr["lines"]:
+            assert g["mode"] in {"metro", "tram", "bus"} and g["network"] and g["lines"]
+            assert len({l.casefold() for l in g["lines"]}) == len(g["lines"])
+    if any(c.startswith("44") for c in index["code"]):
+        served = [b for b in shops if b["transit"] and (b["transit"]["lines"] or b["transit"]["stations"])]
+        assert len(served) >= 0.8 * len(shops), "most shops of Loire-Atlantique have a line within 500 m"
+        assert any(g["mode"] == "tram" for b in shops if b["transit"] for g in b["transit"]["lines"]), "Nantes tramway"
+
+
 def test_commune_risks(index, meta):
     if not fetched(meta, "gaspar"):
         pytest.skip("GASPAR not downloaded in this build (optional source)")

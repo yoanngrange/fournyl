@@ -114,6 +114,18 @@ function footfall(b) {
     .join('')}</div>`;
 }
 
+/** Lines with a stop within 500 m: train stations by name, then metro, tram and bus lines grouped by network. */
+function transit(b) {
+  const tr_ = b.transit;
+  if (!tr_.stations.length && !tr_.lines.length) return `<p class="pg-muted">${t['bakery.transit.none']}</p>`;
+  const chips = (lines) => `<span class="bk-lines">${lines.map((l) => `<span class="bk-line">${esc(l)}</span>`).join('')}</span>`;
+  const rows = [
+    tr_.stations.length && row(t['bakery.transit.train'], esc(tr_.stations.join(' · '))),
+    ...tr_.lines.map((g) => row(`${t[`bakery.transit.${g.mode}`]} <small>${esc(g.network)}</small>`, chips(g.lines))),
+  ].filter(Boolean);
+  return `<div class="bk-transit">${rows.join('')}</div>`;
+}
+
 function access(b) {
   const a = b.access;
   const w = b.osm?.wheelchair;
@@ -155,6 +167,7 @@ export function bakeryHTML(b, p, meta, fonds) {
   const y = meta.years;
   const sirene = meta.sources.find((x) => x.id === 'sirene')?.published;
   const sireneMonth = sirene ? new Date(sirene).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
+  const transitYear = meta.sources.find((x) => x.id === 'transit')?.fetched?.slice(0, 4) ?? '';
   return `
     <div class="pg-head bk-head">
       <div class="pg-head-id">
@@ -173,10 +186,11 @@ export function bakeryHTML(b, p, meta, fonds) {
       ${b.accounts ? section('bk-acc', t['bakery.accounts'], 'comptes', accounts(b)) : ''}
       ${section('bk-near', t['bakery.near'], 'concurrence-proche', near(b, p))}
       ${section('bk-footfall', t['bakery.footfall'], 'passage', footfall(b))}
+      ${b.transit ? section('bk-transit', t['bakery.transit'], 'transports', transit(b)) : ''}
       ${section('bk-access', t['bakery.access'], 'accessibilite', access(b))}
       ${section('bk-commune', `${t['bakery.commune']} : ${esc(p.name)}`, 'note', commune(p, fonds))}
     </div>
-    <p class="pg-sources">${tr('page.built', { built: new Date(meta.built_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) })} ${tr('bakery.sources', { sirene: sireneMonth, water: y.water })}<a href="aide/#boutique">${t['help.link']}</a></p>`;
+    <p class="pg-sources">${tr('page.built', { built: new Date(meta.built_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) })} ${tr('bakery.sources', { sirene: sireneMonth, water: y.water, transit: transitYear })}<a href="aide/#boutique">${t['help.link']}</a></p>`;
 }
 
 /** Map of the shop (large ink-ringed marker) and its competitors within 2 km; list rows and markers linked. */
