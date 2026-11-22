@@ -1,7 +1,7 @@
 // Scoring, filters and colours. Ported from design/logic-reference.js; keep behaviour identical.
 
 /**
- * Criteria shown in the sidebar. `dir: -1` means lower is better. sell_soon waits for RNE data (M6).
+ * Criteria shown in the sidebar. `dir: -1` means lower is better.
  * `weight` is our scoring recipe (0–3), decided by us and explained on the sources page; users filter,
  * they do not re-weight.
  */
