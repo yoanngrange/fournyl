@@ -60,7 +60,7 @@ export default {
   'tip.noBakery': 'Aucune boulangerie',
   'tip.bakeries': '{n} boulangerie(s)',
   'notice.title': 'Avant de commencer',
-  'notice.text': 'Les notes sont calculées à partir de <b>données publiques</b> qui ont souvent un à trois ans de retard sur la réalité. Elles aident à repérer des communes à étudier ; elles ne remplacent ni une visite sur place, ni une étude de marché, ni l’avis d’un conseiller.',
+  'notice.text': 'Les notes sont calculées à partir de <b>données publiques</b> qui ont souvent un à trois ans de retard sur la réalité. Elles aident à repérer des communes à étudier ; elles ne remplacent ni une visite sur place, ni l’avis d’un conseiller.',
   'notice.ok': 'J’ai compris',
   'notice.more': 'Conditions d’utilisation',
   'filters.title': 'Filtres',
@@ -303,7 +303,8 @@ export default {
   'page.sources': 'Sources : Insee (populations légales et recensement {census}, Filosofi {income}, BPE {bpe}), Sirene ({sirene}), BODACC, ministère de l’Intérieur (SSMSI {crime}, municipales {election}, Répertoire national des élus), ministère de la Santé (contrôle sanitaire de l’eau {water}), ministère de l’Agriculture (Alim’Confiance), IGN Admin Express, La Poste (codes postaux). ',
   'footer.text': 'Fournyl est un outil indépendant d’aide à la décision, fondé sur des données publiques. Il ne garantit ni l’exactitude ni l’actualité des chiffres.',
   'svc.primary_schools': 'Écoles',
-  'svc.secondary_schools': 'Collèges et lycées',
+  'svc.colleges': 'Collèges',
+  'svc.lycees': 'Lycées',
   'svc.pharmacies': 'Pharmacies',
   'svc.doctors': 'Médecins généralistes',
   'svc.post': 'Poste (bureau, agence ou relais)',
@@ -403,7 +404,7 @@ export default {
     { id: 'donnee-manquante', html: 'Quand une donnée manque pour une commune, le critère est <b>retiré du calcul pour cette commune</b> et les autres critères comptent davantage. Une donnée manquante n’est jamais remplacée par 0 ; elle est affichée « non diffusé ».' },
     { id: 'categories', html: '<b>Favorable</b> : 60 et plus. <b>À étudier</b> : 40 à 59. <b>Défavorable</b> : moins de 40 (hachuré sur la carte).' },
     { id: 'filtres', html: 'Les curseurs ne changent pas la note : ils masquent les communes qui ne vous intéressent pas (trop petites, trop chères…). La note ne dépend pas non plus de la zone affichée : une commune garde sa couleur quand vous déplacez la carte.' },
-    { id: 'carte', html: '<b>La carte.</b> Les curseurs couvrent les communes à l’écran et suivent vos déplacements ; leur extrémité droite inclut les valeurs au-delà (« et + »). Le curseur de délinquance s’arrête à 100 faits pour 1 000 habitants : au-delà, ce sont des cas à part (aéroports, stations), toujours inclus tant que la poignée de droite est au bout. Vue de France, la carte colore chaque département selon son nombre de communes favorables qui passent vos filtres ; zoomée, elle colore les communes selon leur note.' },
+    { id: 'carte', html: '<b>La carte.</b> Les curseurs couvrent les communes à l’écran et suivent vos déplacements ; leur extrémité droite inclut les valeurs au-delà (« et + »). Le curseur de délinquance s’arrête à 100 faits pour 1 000 habitants pour rester sur des valeurs non aberrantes : au-delà, ce sont des cas à part, comme Roissy-en-France (environ 990 faits pour 1 000 habitants, à cause de l’aéroport) ou certaines stations. Ils restent inclus tant que la poignée de droite est au bout, et dans la note ils prennent simplement le dernier rang, sans fausser celui des autres communes. Vue de France, la carte colore chaque département selon son nombre de communes favorables qui passent vos filtres ; zoomée, elle colore les communes selon leur note.' },
     { id: 'classement', html: '<b>Classement.</b> Vue de France, la liste donne les 5 départements qui comptent le plus de communes favorables passant vos filtres. Zoomée sur un département, elle donne les 5 communes à l’écran les mieux notées parmi celles qui passent vos filtres. Les deux suivent vos réglages.' },
   ],
   'sources.choices.title': 'Les critères et nos choix',
@@ -416,7 +417,6 @@ export default {
     { id: 'anciennete', html: '<b>Ancienneté des boulangeries.</b> Âge moyen, en années, des boulangeries en activité de la commune (répertoire Sirene, code 10.71C), compté depuis l’immatriculation de l’établissement. Une reprise crée en général un nouvel établissement : ce chiffre dit donc depuis combien de temps les boulangers actuels sont installés. Plus il est élevé, plus une reprise ou une création est probable dans les années à venir. Une commune sans boulangerie n’a pas ce critère.' },
     { id: 'delinquance', html: '<b>Délinquance.</b> Somme, pour 1 000 habitants, des cambriolages de logement, des violences physiques hors cadre familial et des vols (avec arme, violents sans arme, sans violence contre les personnes) enregistrés en {crime}. Nous laissons de côté les escroqueries et les infractions liées aux stupéfiants, qui reflètent surtout l’activité des services de police.' },
     { id: 'petits-nombres', html: '<b>Petits nombres de faits.</b> Le ministère de l’Intérieur ne publie pas les nombres de 1 à 4 faits. Nous les comptons pour 2,5 ; si cette approximation rend le taux trop incertain (plus de 5 faits pour 1 000 habitants d’écart possible), le critère est ignoré pour la commune.' },
-    { id: 'a-reprendre', html: '<b>Boulangeries à reprendre bientôt.</b> Ce critère arrivera plus tard. Il utilisera l’âge des dirigeants inscrit au Registre national des entreprises, publié uniquement sous forme de nombres par commune : jamais une entreprise ni une personne.' },
     { id: 'reprises', html: '<b>Reprises, créations, fermetures (depuis 2016).</b> Tirées du répertoire Sirene (boulangeries, code 10.71C). Une <b>reprise</b>, c’est une boulangerie qui ferme et, dans les 6 mois, une autre entreprise qui en ouvre une dans la même commune. Une <b>création</b> est une ouverture sans fermeture associée ; une <b>fermeture sans repreneur</b>, l’inverse. Ces chiffres n’entrent pas dans la note : ils servent à juger la vitalité du commerce.' },
     { id: 'prix-fonds', html: '<b>Prix d’un fonds de boulangerie.</b> Médiane des prix de vente publiés au BODACC (Bulletin officiel des annonces civiles et commerciales) sur les 5 dernières années, pour les fonds dont l’activité mentionne la boulangerie. Seuls les achats comptent (pas les apports en société ni les locations-gérances) ; les annonces rectifiées, les doublons et les montants inférieurs à 5 000 € ou supérieurs à 3 millions d’euros sont écartés. Le chiffre du département n’est affiché qu’à partir de 20 ventes ; sinon, la fiche montre la médiane nationale. Aucune vente n’est montrée individuellement.' },
     { id: 'eau', html: '<b>Dureté de l’eau du robinet.</b> Titre hydrotimétrique (TH, en degrés français °f) mesuré par les agences régionales de santé lors du contrôle sanitaire de l’eau distribuée en {water}. Pour chaque réseau de distribution, nous prenons la médiane des prélèvements de l’année ; pour la commune, la médiane des réseaux qui la desservent (la fiche indique l’écart quand ils diffèrent). Repères : très douce sous 7 °f, douce de 7 à 15, moyennement dure de 15 à 25, dure de 25 à 35, très dure au-delà. Une eau dure (au-delà d’environ 25 °f) entartre le générateur de buée du four, la chambre de pousse et la machine à café : prévoyez un adoucisseur ou un filtre, et son entretien. Ce chiffre n’entre pas dans la note.' },
@@ -568,7 +568,7 @@ export default {
   'doc.legal': {
     id: 'mentions',
     title: 'Mentions légales',
-    updated: '2026-11-11',
+    updated: '2026-11-22',
     intro: 'Informations prévues par la loi pour la confiance dans l’économie numérique (LCEN, article 6).',
     sections: [
       {
@@ -589,14 +589,14 @@ export default {
       {
         title: 'Nature du service',
         paras: [
-          'Fournyl est un outil gratuit d’aide à la décision. Il calcule, pour chaque commune de France métropolitaine et de Corse, une note destinée aux boulangers qui cherchent où ouvrir ou reprendre une boulangerie. Les notes et les chiffres reposent uniquement sur des données publiques ; ils ne constituent ni un conseil financier, juridique ou en investissement, ni une étude de marché. Voir les <a href="#conditions">conditions d’utilisation</a>.',
+          'Fournyl est un outil gratuit d’aide à la décision. Il calcule, pour chaque commune de France métropolitaine et de Corse, une note destinée aux boulangers qui cherchent où ouvrir ou reprendre une boulangerie. Les notes et les chiffres reposent uniquement sur des données publiques ; ils forment une <b>étude de marché documentaire</b>, sans enquête de terrain (loyers, état des boutiques, passage, prévisionnel), et ne constituent ni un conseil financier, juridique ou en investissement. Voir les <a href="aide/#conditions">conditions d’utilisation</a>.',
         ],
       },
       {
         title: 'Données réutilisées et licences',
         paras: [
-          'Les données affichées sont des <b>informations publiques réutilisées</b> conformément au code des relations entre le public et l’administration (articles L. 321-1 et suivants). Chaque chiffre est accompagné de sa source et de son année ; la liste complète est sur la page <a href="sources/">Sources et méthode</a>.',
-          '<ul><li><b>Insee</b> (recensement, populations légales, Filosofi, Base permanente des équipements, Sirene, code officiel géographique), <b>IGN</b> (Admin Express, Plan IGN), <b>ministère de l’Intérieur</b> (SSMSI, élections, Répertoire national des élus), <b>DILA</b> (BODACC) : Licence Ouverte 2.0 (Etalab).</li><li><b>Wikidata</b> : CC0. <b>Photos Wikimedia Commons</b> : licence et auteur indiqués sur chaque photo.</li><li>Les données ont pu être recalculées (rangs, taux, médianes) ; ces traitements sont décrits sur la page Sources et méthode et n’engagent pas les producteurs, qui ne cautionnent pas Fournyl.</li></ul>',
+          'Les données affichées sont des <b>informations publiques réutilisées</b> conformément au code des relations entre le public et l’administration (articles L. 321-1 et suivants). Chaque chiffre est accompagné de sa source et de son année ; la liste complète est dans la partie <a href="aide/#sources">Sources et mises à jour</a>.',
+          '<ul><li><b>Insee</b> (recensement, populations légales, Filosofi, Base permanente des équipements, Sirene, code officiel géographique), <b>IGN</b> (Admin Express, Plan IGN), <b>ministère de l’Intérieur</b> (SSMSI, élections, Répertoire national des élus), <b>DILA</b> (BODACC) : Licence Ouverte 2.0 (Etalab).</li><li><b>Wikidata</b> : CC0. <b>Photos Wikimedia Commons</b> : licence et auteur indiqués sur chaque photo.</li><li>Les données ont pu être recalculées (rangs, taux, médianes) ; ces traitements sont décrits dans la partie Méthode et n’engagent pas les producteurs, qui ne cautionnent pas Fournyl.</li></ul>',
         ],
       },
       {
@@ -618,13 +618,13 @@ export default {
   'doc.privacy': {
     id: 'confidentialite',
     title: 'Confidentialité',
-    updated: '2026-11-06',
+    updated: '2026-11-22',
     intro: 'Fournyl ne demande aucun compte, ne dépose aucun cookie et ne vend aucune donnée. Voici exactement ce qui se passe quand vous utilisez le site.',
     sections: [
       {
         title: 'Ce qui reste dans votre navigateur',
         paras: [
-          'Votre <b>sélection de communes</b> (étoile) et le fait d’avoir fermé le message d’accueil sont enregistrés dans le stockage local de votre navigateur (« localStorage »). Ils ne quittent jamais votre appareil et ne nous sont pas transmis. Vous pouvez les effacer à tout moment en supprimant les données du site dans votre navigateur.',
+          'Votre <b>panier</b> (les communes que vous y ajoutez) et le fait d’avoir fermé le message d’accueil sont enregistrés dans le stockage local de votre navigateur (« localStorage »). Ils ne quittent jamais votre appareil et ne nous sont pas transmis. Vous pouvez les effacer à tout moment en supprimant les données du site dans votre navigateur.',
           'Si vous installez Fournyl comme application, une copie des pages et des données déjà consultées est gardée dans le cache du navigateur pour fonctionner hors connexion.',
         ],
       },
@@ -644,8 +644,7 @@ export default {
       {
         title: 'Personnes citées dans les données',
         paras: [
-          'Les fiches affichent le nom du maire (Répertoire national des élus) et le nom de sociétés de 10 salariés ou plus (Sirene). Les entrepreneurs individuels et les entreprises qui ont demandé à ne pas être diffusées ne sont jamais nommés.',
-          'Le futur indicateur « boulangeries à reprendre bientôt » n’utilisera que des <b>nombres par commune</b> : aucune boulangerie ni aucune personne ne sera jamais signalée individuellement.',
+          'Les fiches affichent le nom du maire (Répertoire national des élus) et le nom de sociétés (Sirene) : les principaux employeurs de la commune et les boulangeries, désignées par leur enseigne ou par le nom de la société qui les exploite. Les entrepreneurs individuels et les entreprises qui ont demandé à ne pas être diffusées ne sont jamais nommés.',
           'Vous pouvez vous opposer à l’affichage de votre nom ou demander une rectification en écrivant à <a href="mailto:{contact}">{contact}</a>.',
         ],
       },
@@ -661,10 +660,10 @@ export default {
   'doc.terms': {
     id: 'conditions',
     title: 'Conditions d’utilisation',
-    updated: '2026-11-06',
+    updated: '2026-11-22',
     intro: 'Fournyl est gratuit et accessible sans inscription. En l’utilisant, vous acceptez les conditions ci-dessous, en particulier les limites des données.',
     callout: [
-      '<b>En bref.</b> Les notes sont calculées à partir de données publiques qui ont souvent <b>un à trois ans de retard</b> sur la réalité, et ne voient pas tout : loyers, état des boutiques, passage, projets en cours. Fournyl aide à <b>repérer des communes à étudier</b>. Il ne remplace ni une visite sur place, ni une étude de marché, ni l’avis d’un conseiller (chambre de métiers et de l’artisanat, banque, expert-comptable).',
+      '<b>En bref.</b> Les notes sont calculées à partir de données publiques qui ont souvent <b>un à trois ans de retard</b> sur la réalité, et ne voient pas tout : loyers, état des boutiques, passage, projets en cours. Fournyl aide à <b>repérer des communes à étudier</b>. Son étude de marché repose sur ces seules données : elle ne remplace ni une visite sur place, ni l’avis d’un conseiller (chambre de métiers et de l’artisanat, banque, expert-comptable).',
     ],
     sections: [
       {
@@ -676,9 +675,9 @@ export default {
       {
         title: 'Des données publiques, avec leurs limites',
         paras: [
-          '<b>Décalage dans le temps.</b> Chaque source a son propre millésime : le recensement, par exemple, décrit la population de plusieurs années avant sa publication. Une boulangerie peut avoir ouvert ou fermé depuis. Les dates de chaque source sont dans la partie <a href="#donnees">Mises à jour des données</a>.',
+          '<b>Décalage dans le temps.</b> Chaque source a son propre millésime : le recensement, par exemple, décrit la population de plusieurs années avant sa publication. Une boulangerie peut avoir ouvert ou fermé depuis. Les dates de chaque source sont dans la partie <a href="aide/#sources">Sources et mises à jour</a>.',
           '<b>Données manquantes.</b> Pour protéger le secret statistique, les producteurs ne publient pas certains chiffres sur les petites communes. Ils sont affichés « non diffusé » et retirés de la note de la commune, qui repose alors sur moins de critères.',
-          '<b>Approximations.</b> Certaines valeurs sont estimées (petits nombres de faits de délinquance, reprises déduites de Sirene, prix médians des fonds). Les choix de calcul et leurs biais sont décrits sur la page <a href="sources/">Sources et méthode</a>.',
+          '<b>Approximations.</b> Certaines valeurs sont estimées (petits nombres de faits de délinquance, reprises déduites de Sirene, prix médians des fonds). Les choix de calcul et leurs biais sont décrits dans la partie <a href="aide/#methode">Méthode</a>.',
           '<b>Une méthode, pas une vérité.</b> La note est un classement relatif construit par Fournyl avec des poids que nous avons choisis. Ce n’est ni un indicateur officiel, ni une prévision de chiffre d’affaires, ni une évaluation du prix d’une entreprise.',
         ],
       },

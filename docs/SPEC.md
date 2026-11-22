@@ -154,7 +154,9 @@ water only on commune pages. Location history: a closed shop that ended at most 
 operator's start is a predecessor (closures are registered late); one that ran alongside is listed apart ("Au même
 endroit, pendant l'activité actuelle": a neighbouring shop at the same address or a corner inside it).
 Commune page: the points of sale list sorts by distance to the town hall (default) or by age, oldest first. The commune page links each bakery and pastry shop
-(list arrow and map popup). Every page is indexed and in the sitemaps; a sole trader is never named (CLAUDE.md).
+(list arrow and map popup), with the path of its own commune: a shop within 5 km may sit in a neighbouring commune
+(`path` in `bread_points`, fixed Nov 22, 2026). Every page is indexed and in the sitemaps; a sole trader is never named (CLAUDE.md).
+Commune page, safety and services (Nov 22, 2026): collèges and lycées counted apart, as on bakery pages.
 *Planned (Yoann, Nov 22, 2026):* **Transports en commun à moins de 500 m** — the numbers of the bus, tram, metro
 and train lines with a stop within 500 m of the shop (GTFS feeds, national aggregate on transport.data.gouv.fr;
 details in PLAN.md).
@@ -197,7 +199,7 @@ per commune), then every detailed figure of each commune. A counter shows "n / 5
 (`src/lib/compare-view.js`): one table per theme, one column per commune, header repeated on each page, the most
 favourable value of a row flagged "meilleur", a bar scaled on the row under every figure. Themes: summary, why this
 score (ranks), location maps side by side, demography (population indexed to 100 on one chart, one line style per
-commune; age bands), bakeries and competition, points of sale of bread (maps side by side, counts by kind, hygiene),
+commune; one men / women age pyramid per commune, Nov 22, 2026), bakeries and competition, points of sale of bread (maps side by side, counts by kind, hygiene),
 tap water, local economy, income and housing, safety and services, politics. With one commune, its full sheet.
 **Values in words** ("aucune", "non diffusé") are set smaller than figures and stay on one line; figure grids are
 `<dl>` lists (label `dt`, value and note `dd`).

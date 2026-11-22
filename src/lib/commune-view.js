@@ -6,7 +6,7 @@ export const loadMaplibre = () => (glPromise ??= import('../../vendor/maplibre-g
 import t from '../i18n/fr.js';
 import { BIN_COLOURS, CRITERIA, WEIGHTS, bin, category, score } from './scoring.js';
 import { fmtCriterion, fmtEuro, fmtInt, fmtPct, fmtSigned, helpLink, textClass, tr } from './format.js';
-import { bakerySlug, communePath, depPath } from './slug.js';
+import { depPath } from './slug.js';
 import { basketButton } from './basket.js';
 
 export const getJSON = (path) => fetch(`data/${path}`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(path))));
@@ -194,7 +194,8 @@ function wireChart(wrap) {
   });
 }
 
-function pyramid(p) {
+/** Age pyramid, men left and women right, each bar as a share of the whole population. */
+export function pyramidChart(p) {
   const total = [...p.pyramid.m, ...p.pyramid.f].reduce((a, b) => a + (b || 0), 0) || 1;
   const max = Math.max(...p.pyramid.m, ...p.pyramid.f) || 1;
   const rows = p.pyramid.bands
@@ -210,9 +211,11 @@ function pyramid(p) {
       </div>`;
     })
     .join('');
-  return `<h3>${t['card.pyramid']}</h3><div class="pyr-head" aria-hidden="true"><span>${t['card.men']}</span><span>${t['card.women']}</span></div>
+  return `<div class="pyr-head" aria-hidden="true"><span>${t['card.men']}</span><span>${t['card.women']}</span></div>
     <div role="list">${rows}</div>`;
 }
+
+const pyramid = (p) => `<h3>${t['card.pyramid']}</h3>${pyramidChart(p)}`;
 
 function competition(p, fonds, depName) {
   const c = p.competition;
@@ -302,7 +305,7 @@ function incomeHousing(p, depName) {
 function safetyServices(p) {
   const crime = p.criteria.crime;
   const a = p.amenities;
-  const svc = ['primary_schools', 'secondary_schools', 'pharmacies', 'doctors', 'post', 'stations']
+  const svc = ['primary_schools', 'colleges', 'lycees', 'pharmacies', 'doctors', 'post', 'stations']
     .map((k) => row(t[`svc.${k}`], a[k] ? fmtInt(a[k]) : t['card.none']))
     .join('');
   return cols(
@@ -436,7 +439,7 @@ export function hygiene(b) {
 export const hygieneText = (h) => `${tr('page.hyg', { level: t[`page.hyg.${h.level}`] })} (${tr('page.hyg.on', { date: h.date })})`;
 
 /** One point of sale in the list; i = its index in p.bread_points, shared with its marker on the map. */
-function breadRow(b, i, base) {
+function breadRow(b, i) {
   const since = b.year ? ` · ${tr('page.bread.since', { year: b.year })}` : '';
   const h = hygiene(b);
   const hyg = h ? `<small class="pg-hyg is-${h.level}"><i aria-hidden="true">${'●'.repeat(5 - h.level)}${'○'.repeat(h.level - 1)}</i> ${hygieneText(h)}</small>` : '';
@@ -444,7 +447,7 @@ function breadRow(b, i, base) {
     <span class="pg-dot" style="background:${KIND_COLOURS[b.kind]}"></span>
     <span>${b.name ? esc(b.name) : `<i>${t['page.bread.noName']}</i>`} <small>${t[`page.bread.${b.kind}`]}${since}</small>${hyg}</span>
     <b>${b.km.toFixed(1).replace('.', ',')} km</b></button>${
-    b.id ? `<a class="pg-point-page" href="${base}${bakerySlug(b)}" aria-label="${esc(tr('bakery.open', { name: b.name || t[`page.bread.${b.kind}`] }))}">→</a>` : ''}</li>`;
+    b.path ? `<a class="pg-point-page" href="${b.path}" aria-label="${esc(tr('bakery.open', { name: b.name || t[`page.bread.${b.kind}`] }))}">→</a>` : ''}</li>`;
 }
 
 /** Tap water hardness of the commune (median of the networks serving it). */
@@ -496,7 +499,6 @@ function risks(p) {
 
 /** Points of sale in the commune first, then the others within 5 km; nearest first in each group. */
 function breadList(p) {
-  const base = communePath(p.dep_name, p.name, p.code);
   if (!p.bread_points.length) return `<p class="pg-muted">${t['page.bread.none']}</p>`;
   const all = p.bread_points.map((b, i) => [b, i]);
   const here = all.filter(([b]) => b.here);
@@ -504,7 +506,7 @@ function breadList(p) {
   const checked = p.bread_points.filter(hygiene).length;
   const count = `<p class="pg-muted small pg-hyg-count">${checked ? tr('page.hyg.count', { n: fmtInt(checked), total: fmtInt(p.bread_points.length) }) : t['page.hyg.countNone']}.</p>`;
   const group = (title, list, empty) => `<h3 class="pg-points-title">${title} <span>${fmtInt(list.length)}</span></h3>
-    ${list.length ? `<ul class="pg-points">${list.map(([b, i]) => breadRow(b, i, base)).join('')}</ul>` : `<p class="pg-muted small">${empty}</p>`}`;
+    ${list.length ? `<ul class="pg-points">${list.map(([b, i]) => breadRow(b, i)).join('')}</ul>` : `<p class="pg-muted small">${empty}</p>`}`;
   const sort = `<div class="pg-sort" role="group" aria-label="${t['page.bread.sort']}">
     <span>${t['page.bread.sort']}</span>
     <button type="button" data-sort="km" aria-pressed="true">${t['page.bread.sort.km']}</button>
@@ -568,7 +570,7 @@ export async function breadMap(el, p, { print = false, ...mapOptions } = {}) {
     el.setAttribute('aria-label', `${b.name || t['page.bread.noName']}, ${t[`page.bread.${b.kind}`]}`);
     const popup = new maplibregl.Popup({ offset: 12, closeButton: false }).setHTML(
       `<b>${b.name ? esc(b.name) : t['page.bread.noName']}</b><br>${t[`page.bread.${b.kind}`]}${b.year ? ` · ${tr('page.bread.since', { year: b.year })}` : ''} · ${b.km.toFixed(1).replace('.', ',')} km${hygiene(b) ? `<br>${hygieneText(hygiene(b))}` : ''}${
-        b.id && !print ? `<br><a href="${communePath(p.dep_name, p.name, p.code)}${bakerySlug(b)}">${t['bakery.see']} →</a>` : ''}`,
+        b.path && !print ? `<br><a href="${b.path}">${t['bakery.see']} →</a>` : ''}`,
     );
     markers.push(new maplibregl.Marker({ element: el }).setLngLat([b.lon, b.lat]).setPopup(popup).addTo(map));
   }

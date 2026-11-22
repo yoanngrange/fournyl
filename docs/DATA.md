@@ -83,7 +83,8 @@ communes-index.json          one row per commune, compact columnar JSON (~35k ro
 geo/{dep}.geojson            commune polygons for one département (loaded on zoom)
 adj/{dep}.json               { code: [neighbour codes] }   // may include codes from adjacent départements
 commune/{code}.json          everything for the commune page (pyramid, history, sectors, amenities, bread_points
-                               with hyg/hyg_date, water {year, th, min, max, networks, class},
+                               with hyg/hyg_date and path (own page, in the shop's commune; null for other kinds),
+                               water {year, th, min, max, networks, class},
                                comparisons with département and France, nearby communes)
 ```
 

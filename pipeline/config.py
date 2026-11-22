@@ -298,7 +298,8 @@ BPE_CODES = {
     "pharmacies": ["D307"],
     "doctors": ["D265"],  # médecin généraliste
     "primary_schools": ["C107", "C108", "C109"],
-    "secondary_schools": ["C201", "C301", "C302", "C303"],
+    "colleges": ["C201"],  # collèges
+    "lycees": ["C301", "C302", "C303"],  # lycées généraux, technologiques, professionnels
     "post": ["A206", "A207", "A208"],
     "stations": ["E107", "E108", "E109"],
 }

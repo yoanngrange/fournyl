@@ -5,7 +5,7 @@
 import t from '../i18n/fr.js';
 import { BIN_COLOURS, CRITERIA, WEIGHTS, bin, category, score } from './scoring.js';
 import { fmtCriterion, fmtEuro, fmtInt, fmtPct, fmtSigned, textClass, tr } from './format.js';
-import { KIND_COLOURS, breadMap, esc, freeze, hygiene, locator, waterScale } from './commune-view.js';
+import { KIND_COLOURS, breadMap, esc, freeze, hygiene, locator, pyramidChart, waterScale } from './commune-view.js';
 
 /** One line style per commune for the population chart: colour and dash, so it never relies on colour alone. */
 const SERIES = [
@@ -139,20 +139,12 @@ function demography(pages, n) {
   const first = Math.max(...pages.map((p) => p.history[0]?.[0] ?? 9999));
   const at = (p, year) => p.history.find(([y]) => y === year)?.[1] ?? null;
   const last = (p) => p.history.at(-1)?.[1] ?? null;
-  const bands = pages[0].pyramid.bands;
-  const share = (p, i) => {
-    const total = [...p.pyramid.m, ...p.pyramid.f].reduce((a, b) => a + (b || 0), 0);
-    return total ? (100 * ((p.pyramid.m[i] || 0) + (p.pyramid.f[i] || 0))) / total : null;
-  };
   return [
     figures(t['card.inhabitants'], pages.map((p) => p.pop), fmtInt),
     figures(t['card.growthYearly'], pages.map((p) => p.criteria.growth.v), fmtSigned, { better: 'high' }),
     figures(tr('page.change', { first }), pages.map((p) => (at(p, first) ? (100 * (last(p) - at(p, first))) / at(p, first) : null)), fmtSigned, { better: 'high' }),
     wide(historyChart(pages), n),
-    sub(`${t['card.pyramid']} · ${t['basket.cmp.shareOfPop']}`, n),
-    ...bands
-      .map((band, i) => figures(band, pages.map((p) => share(p, i)), pct1))
-      .reverse(),
+    cellsRow(`${t['card.pyramid']} · ${t['basket.cmp.shareOfPop']}`, pages.map((p) => `<div class="cmp-pyr">${pyramidChart(p)}</div>`)),
   ].join('');
 }
 
@@ -235,7 +227,7 @@ function income(pages) {
 }
 
 function safety(pages) {
-  const svc = ['primary_schools', 'secondary_schools', 'pharmacies', 'doctors', 'post', 'stations'];
+  const svc = ['primary_schools', 'colleges', 'lycees', 'pharmacies', 'doctors', 'post', 'stations'];
   return [
     figures(t['card.crime'], pages.map((p) => p.criteria.crime.v), (v) => `${fmtCriterion('crime', v)} ‰`, { better: 'low' }),
     figures(t['basket.cmp.crimeRank'], pages.map((p) => (p.criteria.crime.pct == null ? null : Math.round(p.criteria.crime.pct / 10))), (v) => `${v} / 100`, { better: 'high' }),

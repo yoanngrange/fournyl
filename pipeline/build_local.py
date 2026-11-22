@@ -274,7 +274,8 @@ def bread_points(centres: pd.DataFrame) -> dict:
                 "here": r.home == code,
                 "hyg": int(r.level) if pd.notna(r.level) else None,
                 "hyg_date": r.date if isinstance(r.date, str) else None,
-                "id": r.page,  # its own page, for bakeries and pastry shops
+                "id": r.page if isinstance(r.page, str) else None,  # its own page, for bakeries and pastry shops
+                "home": r.home,  # its commune (may be a neighbour): export turns id + home into the page path
             }
             for r in g.head(BREAD_MAX_POINTS).itertuples()
         ]
