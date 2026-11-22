@@ -8,7 +8,6 @@ export const CRITERIA = [
   { key: 'income',     label: 'Revenu médian',                      dir: 1,  weighted: true, defaultWeight: 2 },
   { key: 'growth',     label: 'Évolution de la population',         dir: 1,  weighted: true, defaultWeight: 2 },
   { key: 'crime',      label: 'Taux de délinquance',                dir: -1, weighted: true, defaultWeight: 1 },
-  { key: 'sell_soon',  label: 'Boulangeries à reprendre bientôt',   dir: 1,  weighted: true, defaultWeight: 1 },
 ];
 
 /**

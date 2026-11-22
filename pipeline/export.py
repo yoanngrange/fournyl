@@ -81,7 +81,7 @@ def meta(manifest: dict, deps: list[str], checks: dict) -> dict:
 def index(df: pd.DataFrame, centres: pd.DataFrame, raw: pd.DataFrame, pct: pd.DataFrame) -> dict:
     """communes-index.json: one entry per commune, columnar arrays with short keys."""
     # Kept lean (DATA.md §4): ~100 m positions, income to the nearest 10 €, criteria without any data omitted.
-    digits = {"per_bakery": 0, "income": -1, "growth": 2, "crime": 1, "bakery_age": 1, "sell_soon": 0}
+    digits = {"per_bakery": 0, "income": -1, "growth": 2, "crime": 1, "bakery_age": 1}
     present = [c for c in CRITERIA if raw[c].notna().any()]
     return {
         "code": list(df.index),

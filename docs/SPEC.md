@@ -83,7 +83,6 @@ Criteria (MVP):
 | `growth` | Évolution de la population | %/year | higher | Medium (2) |
 | `bakery_age` | Ancienneté des boulangeries | mean years since the active 10.71C establishments were registered (Sirene); none without a bakery | higher (older shops: takeover or opening more likely) | Medium (2), Nov 2026 |
 | `crime` | Taux de délinquance | offences /1,000 | lower | Low (1), on by default |
-| ~~`sell_soon`~~ | ~~Boulangeries à reprendre bientôt~~ | dropped Nov 22, 2026 (RNE signal not built) | | |
 
 ### 3.3 Delivery mode (project switch "En boutique | En tournée")
 - User clicks a commune to place the **bakehouse** (marked with a dark pin).

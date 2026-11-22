@@ -31,7 +31,6 @@ def test_crime_is_inverted_and_no_bakery_is_boosted():
     assert pct.at["none", "per_bakery"] > pct.at["big", "per_bakery"]  # 1000 × 3 > 2000 / 1
     assert pct.at["none", "crime"] == 1000  # lowest crime ranks best
     assert np.isnan(pct.at["tiny", "crime"])
-    assert pct["sell_soon"].isna().all()
 
 
 def test_older_bakeries_rank_higher():
@@ -70,7 +69,7 @@ def test_small_communes_pulled_to_the_middle():
         index=[f"{i:05d}" for i in range(n + 2)],
     )
     raw = pd.DataFrame(
-        {"per_bakery": 100.0, "income": 20_000.0, "growth": [9.0, 9.0] + [i / 100 for i in range(n)], "crime": 1.0, "bakery_age": 10.0, "sell_soon": float("nan")},
+        {"per_bakery": 100.0, "income": 20_000.0, "growth": [9.0, 9.0] + [i / 100 for i in range(n)], "crime": 1.0, "bakery_age": 10.0},
         index=df.index,
     )
     pct = score.percentiles(raw, df)
