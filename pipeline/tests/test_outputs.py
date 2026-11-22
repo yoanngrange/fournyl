@@ -231,13 +231,21 @@ def test_local_context(index):
 
 
 def test_bread_points(index):
+    built = set(index["code"])
     for code in index["code"][:2000]:
         pts = load(f"commune/{code}.json")["bread_points"]
         assert len(pts) <= 300
         assert [p["km"] for p in pts] == sorted(p["km"] for p in pts)
         for p in pts:
-            assert set(p) == {"lat", "lon", "km", "kind", "name", "year", "here", "hyg", "hyg_date", "id"}
-            assert (p["id"] is not None) == (p["kind"] in {"bakery", "pastry"})
+            assert set(p) == {"lat", "lon", "km", "kind", "name", "year", "here", "hyg", "hyg_date", "path"}
+            # Only bakeries and pastry shops have a page (none when their commune is outside this build).
+            assert p["path"] is None or p["kind"] in {"bakery", "pastry"}
+            if p["path"]:
+                # The page sits in the shop's own commune, not in the commune whose list shows it.
+                home, bid = re.fullmatch(r"[a-z0-9-]+/[a-z0-9-]+-(\w{5})/[a-z0-9-]+-([0-9a-f]{10})/", p["path"]).groups()
+                assert home.upper() == code or not p["here"]
+                if home.upper() in built:  # a neighbour outside this build (sample) has no file here
+                    assert bid in {b["id"] for b in load(f"bakery/{home.upper()}.json")}
             assert p["hyg"] in {None, 1, 2, 3, 4}
             assert (p["hyg"] is None) == (p["hyg_date"] is None)
             assert p["hyg_date"] is None or re.fullmatch(r"20\d\d-[01]\d", p["hyg_date"])

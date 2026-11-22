@@ -151,7 +151,7 @@ def commune_page(
             "main_employers": employers.get(code, []),
         },
         "politics": politics.get(code),
-        "bread_points": bread.get(code, []),
+        "bread_points": [_point_path(b, all_rows, dep_names) for b in bread.get(code, [])],
         "water": water.get(code),  # tap water hardness, null without a measure that year
         "risks": (risks or {}).get(code),  # known natural risks and CatNat declarations (GASPAR)
         "wiki": wiki.get(code),  # Commons file name and fr.wikipedia article
@@ -188,6 +188,11 @@ def bakery_page_path(b: dict, home: str, df: pd.DataFrame, dep_names: dict) -> s
     name = b.get("name") or ("patisserie" if b.get("kind") == "pastry" else "boulangerie")
     row = df.loc[home]
     return commune_path(dep_names.get(row["dep"], ""), row["name"], home) + f"{slugify(name)}-{b['id']}/"
+
+
+def _point_path(b: dict, df: pd.DataFrame, dep_names: dict) -> dict:
+    """A point of sale carries the path of its own page, in its own commune (it may sit in a neighbouring one)."""
+    return {**{k: v for k, v in b.items() if k not in ("id", "home")}, "path": bakery_page_path(b, b.get("home"), df, dep_names)}
 
 
 def _with_paths(b: dict, df: pd.DataFrame, dep_names: dict) -> dict:

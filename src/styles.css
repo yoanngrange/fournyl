@@ -824,6 +824,12 @@ body.page { height: auto; background: var(--paper); overflow-x: clip; }
 .cmp-bar i { display: block; height: 5px; background: var(--ink); }
 .cmp-sub th { padding-top: 12px; font-family: var(--font-num) !important; font-size: 11px !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; color: var(--ink-2) !important; border-bottom: var(--line); }
 .cmp-wide td { padding: 10px 8px; }
+/* Age pyramid in a comparison column (narrow): compact rows, darker figures so they stay legible on paper. */
+.cmp-pyr { min-width: 0; }
+.cmp-pyr .pyr-head { font-size: 10px; font-weight: 700; color: var(--ink-2); }
+.cmp-pyr .pyr-row { grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr); gap: 3px; font-size: 9.5px; line-height: 1.25; }
+.cmp-pyr .pyr-m, .cmp-pyr .pyr-f { color: var(--ink-2); gap: 2px; }
+.cmp-pyr .pyr-m i, .cmp-pyr .pyr-f i { height: 8px; min-width: 1px; }
 .cmp-chart-title { margin: 0 0 4px; font-family: var(--font-num); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
 .cmp-chart { width: 100%; height: auto; display: block; }
 .cmp-chart text { font-family: var(--font-num); font-size: 11px; fill: var(--ink-3); }
