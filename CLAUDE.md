@@ -44,8 +44,7 @@ Explain trade-offs briefly when you deviate from this file.
 
 ## Privacy (non-negotiable)
 
-- The "bakeries likely to sell soon" signal uses company directors' birth years (RNE).
-  **Only aggregated counts per commune are ever stored in `public/data` or shown.**
+- No data about company directors (the RNE "likely to sell soon" signal was dropped, Nov 22, 2026).
   Never output an individual business with an age or a "likely to sell" flag.
 - **Bakery pages** (one per bakery / pastry shop, Nov 2026) show public SIRENE facts about the shop. The SIRET
   never leaves the pipeline (pages use `bakery_id`). A sole trader (entreprise individuelle) is a person: never

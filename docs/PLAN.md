@@ -69,7 +69,7 @@ Start every milestone on Loire-Atlantique (44), then generalise.
   north-east of Fougères. Tested: a 40-commune block from Louvigné-du-Désert spans 35, 50 and 53.
 
 ## M6 — Takeover signal
-*Deferred (Yoann, Nov 22, 2026): to be looked at later, once the INPI terms for the RNE are settled.*
+*Dropped (Yoann, Nov 22, 2026): no RNE ingestion, no `sell_soon` criterion, no takeover preset.*
 - RNE ingestion (behind a feature flag until INPI terms are confirmed), aggregated `sell_soon` per commune.
 - Takeover preset raises its weight.
 - **Done when:** no individual-level data exists anywhere in `public/`.
@@ -98,9 +98,8 @@ Start every milestone on Loire-Atlantique (44), then generalise.
 
 ## Later
 - Van-tour route planning (OSRM / OpenRouteService): keep in mind.
-- Takeover signal (M6) and the presets that depend on it.
 
-*Dropped (Yoann, Nov 22, 2026):* user accounts, bank-specific study (the basket PDF is enough), bakeries-for-sale
+*Dropped (Yoann, Nov 22, 2026):* takeover signal (M6) and presets, user accounts, bank-specific study (the basket PDF is enough), bakeries-for-sale
 alerts, broker / miller leads, communes looking for a baker, franchise access, overseas départements.
 
 ## Data to add once an open source exists
