@@ -50,7 +50,8 @@ Explain trade-offs briefly when you deviate from this file.
 - **Bakery pages** (one per bakery / pastry shop, Nov 2026) show public SIRENE facts about the shop. The SIRET
   never leaves the pipeline (pages use `bakery_id`). A sole trader (entreprise individuelle) is a person: never
   named (shop sign only). Nothing about directors. Every page is indexed (decided by Yoann, Nov 19, 2026).
-- Any future lead sharing (brokers, millers) requires explicit opt-in from the user.
+- No lead sharing with brokers or millers, and no user accounts (decided Nov 22, 2026). Payment, when it comes,
+  only generates an invoice.
 
 ## Definition of done for any task
 

@@ -1,4 +1,4 @@
-# Fournyl — product spec (v0.1, October 2026)
+# Fournyl — product spec (v0.1, October 2026; scope updated Nov 22, 2026)
 
 ## 1. Problem and users
 
@@ -12,16 +12,20 @@ but is scattered and hard to read. Fournyl turns it into one map and one page pe
 2. **Takeover** — same, plus bakeries whose owners are near retirement.
 3. **Mobile / delivery** — one bakehouse serving several villages without a bakery.
 
-**Later users (paid / B2B, not in MVP):** flour millers, franchises, business brokers, communes
-looking for a baker, training centres (CAP, INBP, Chambres de métiers).
+**No other users planned** (Yoann, Nov 22, 2026): no B2B or franchise access, no leads passed to brokers or
+millers, no listings of communes looking for a baker.
 
 ## 2. MVP scope
 
 In: national map, commune map with filters and weights, delivery mode, commune page, search,
 shareable URL state, local shortlist, all of metropolitan France + Corsica.
 
-Out (later): accounts, payments, PDF market study, broker contact, bakeries-for-sale alerts,
-van-tour route planning, overseas départements, market days, shop rents, foot traffic.
+Later: payment for the market study (one payment, invoice generated at payment, no account), van-tour route
+planning (keep in mind), public transport lines near each bakery (§3.7), the "likely to sell" signal (M6,
+deferred), market days, shop rents and foot traffic (no open source yet).
+
+Dropped (Yoann, Nov 22, 2026): user accounts, bakeries-for-sale alerts, broker / miller contact, communes looking
+for a baker, franchise access, overseas départements. The market study PDF stays as it is (§5, basket).
 
 ## 3. Screens
 
@@ -100,8 +104,9 @@ Criteria (MVP):
   département keeps its colour until its communes are drawn.
 
 ### 3.4 Commune page (`design/Commune.dc.html`, route `/commune/{code_insee}`)
+*Original October brief below; the current layout is in §3.6 ("Commune page layout") and the basket PDF in §5.*
 Header: breadcrumb, shortlist, "Export market study (PDF)" (locked, Pro, later).
-Hero: name, INSEE code, département, region, distance to nearest big city; score tile + label;
+Hero: name, INSEE code, département, region, distance to nearest big city (never built, §7 q. 4); score tile + label;
 one-sentence summary generated from the data; 6 KPI tiles; locator map (commune + 2 rings of neighbours,
 neighbours shaded by "has a bakery").
 Sections: Why this score (national percentile per criterion + weight) · Who lives here (age pyramid,
@@ -110,7 +115,7 @@ Competition (bakeries here, within 10 km, villages with none, likely to sell soo
 table of nearest communes) · Local economy (SIRENE establishments by sector, food shops, cafés, jobs) ·
 Income & housing (median vs département vs France, poverty rate, second homes, vacant housing, price €/m²) ·
 Safety & services (crime vs département vs France, schools, pharmacy, doctors, post office, station; market day "not in open data yet") ·
-Next steps (Pro teasers: bank study, bakeries for sale; opt-in "put me in touch with a broker") · Sources footer.
+Next steps (Pro teasers: bank study, bakeries for sale; opt-in "put me in touch with a broker"; dropped Nov 22, 2026) · Sources footer.
 
 *Nov 19, 2026 — list and map linked:* picking a shop in the list highlights its marker (larger, ink ring, popup open; the map moves if it is off screen); picking a marker highlights its row (ink edge, tinted) and scrolls the list, not the page, to it.
 *Nov 2026 — points of sale of bread (map + list within 5 km):* each point shows the level of its latest
@@ -150,6 +155,9 @@ operator's start is a predecessor (closures are registered late); one that ran a
 endroit, pendant l'activité actuelle": a neighbouring shop at the same address or a corner inside it).
 Commune page: the points of sale list sorts by distance to the town hall (default) or by age, oldest first. The commune page links each bakery and pastry shop
 (list arrow and map popup). Every page is indexed and in the sitemaps; a sole trader is never named (CLAUDE.md).
+*Planned (Yoann, Nov 22, 2026):* **Transports en commun à moins de 500 m** — the numbers of the bus, tram, metro
+and train lines with a stop within 500 m of the shop (GTFS feeds, national aggregate on transport.data.gouv.fr;
+details in PLAN.md).
 
 ### 3.6 URLs (decided Oct 25, 2026)
 | Page | URL |
@@ -231,7 +239,8 @@ Kept up to date with every milestone that adds or changes a criterion.
   linear in between (`NO_BAKERY_BOOST*` in `pipeline/config.py`; decided Oct 25, 2026 from the share of communes
   that do have a bakery by size: 17 % at 300–500 inhabitants, 68 % at 1,000–1,500).
 - Category: Go ≥ 60, Maybe 40–59, Avoid < 40.
-- Presets (open question, §7): New opening, Takeover (sell_soon = High), Mobile.
+- No onboarding questions: the site opens straight on the map (decided Nov 22, 2026). Presets (New opening,
+  Takeover with sell_soon = High) wait for the takeover signal (M6, deferred).
 
 ## 5. Other MVP features
 - **Search:** commune name autocomplete (accent-insensitive, handles "Saint" / "St"), jumps map + opens card.
@@ -251,6 +260,8 @@ Kept up to date with every milestone that adds or changes a criterion.
   "around me" (geolocation asked only on tap, ~100 km across), and the *En boutique / En tournée* switch.
   Bottom sheet: ranking, plus the delivery settings in round mode. Selecting a commune shows a strip
   (name, score, link); the details open on the commune page (a real, shareable URL), not a full-screen sheet.
+- **Payment (planned):** the basket study is paid once (Stripe), an invoice is generated at payment; no account,
+  nothing stored on our side beyond what the payment provider keeps. Still free during the launch.
 - **PWA:** installable (`manifest.webmanifest`), service worker `sw.js`: app shell cached per build,
   data and pages network-first with a cache of the last ~120 files viewed (all of France is ~250 MB).
 - **First visit notice:** what the scores are and are not, dismissed once per browser (localStorage).
@@ -262,8 +273,8 @@ Kept up to date with every milestone that adds or changes a criterion.
 
 ## 7. Open questions (ask Yoann before building these)
 1. ~~Product name and domain~~ **Decided (Nov 2026):** Fournyl, fournyl.com.
-2. Start with 3 onboarding questions (model, where, type of place) or go straight to the map with presets?
-   *For the prototype: straight to the map with the "New opening" preset.*
-3. Takeover and new opening as presets of one score, or two separate scores?
-4. Which reference city to show as "distance to …" on the commune page (nearest city > 50k?).
+2. ~~Onboarding questions or straight to the map?~~ **Decided (Nov 22, 2026):** straight to the map.
+3. Takeover and new opening as presets of one score, or two separate scores? *Deferred with the takeover signal (M6).*
+4. Show "à 32 km de Limoges" (distance to the nearest city of 50,000+ inhabitants) in the commune page header?
+   From the October mockup; never built.
 5. ~~Is the crime criterion on by default?~~ **Decided:** yes, weight Low (1).
