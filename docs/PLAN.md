@@ -69,6 +69,7 @@ Start every milestone on Loire-Atlantique (44), then generalise.
   north-east of Fougères. Tested: a 40-commune block from Louvigné-du-Désert spans 35, 50 and 53.
 
 ## M6 — Takeover signal
+*Deferred (Yoann, Nov 22, 2026): to be looked at later, once the INPI terms for the RNE are settled.*
 - RNE ingestion (behind a feature flag until INPI terms are confirmed), aggregated `sell_soon` per commune.
 - Takeover preset raises its weight.
 - **Done when:** no individual-level data exists anywhere in `public/`.
@@ -81,17 +82,26 @@ Start every milestone on Loire-Atlantique (44), then generalise.
 - Brand **Fournyl** and design system (`docs/DESIGN.md`): flour paper, ink, one red, blue ↔ kraft map scale.
 - Phones: map-first, no sliders, shop / round switch kept, "around me", commune details on their own page.
 - PWA (manifest, icons, service worker). First-visit notice and disclaimers on the map and commune pages.
-- One "Infos légales" page: terms and data limits, legal notice (publisher: association Vraie Forêt),
-  privacy, data updates (dates of every source, next build, build checks).
+- One help page `/aide/`: method, sources and updates, terms of use, legal notice (publisher: association
+  Vraie Forêt), privacy; every "?" of the interface links to it (replaced "Infos légales" and `/sources/`).
 - Operations (`docs/OPERATIONS.md`): Cloudflare Web Analytics, weekly traffic email, daily monitoring,
   build failure alerts, custom domain.
-- Shortlist page `/ma-selection/` (starred communes, compare up to 3 with the best value marked).
-- Still to do from M7: French copy review.
+- Basket `/panier/` (replaced the shortlist `/ma-selection/`): up to 5 communes, comparison and market study PDF.
+- French copy review: done (Yoann, Nov 22, 2026).
 
-## Later (paid version and partners)
-Accounts · Stripe · PDF market study for banks · bakeries-for-sale alerts · opt-in broker / miller leads ·
-communes looking for a baker (listings) · van-tour route planning (OSRM / OpenRouteService) ·
-B2B access for franchises · overseas départements.
+## Next
+- **Public transport near each bakery** (bakery page): numbers of the bus, tram, metro and train lines with a stop
+  within 500 m of the shop, as on the "Ce qui attire du passage" block. Source to confirm: the GTFS feeds of
+  transport.data.gouv.fr (national stop and route aggregate), lines deduplicated by network + short name.
+  **Done when:** works on the 44 sample, lines shown with their network and the data's year, test on stop counts.
+- **Payment:** Stripe for the basket study (1 € for 1 to 5 communes), invoice generated at payment, no account.
+
+## Later
+- Van-tour route planning (OSRM / OpenRouteService): keep in mind.
+- Takeover signal (M6) and the presets that depend on it.
+
+*Dropped (Yoann, Nov 22, 2026):* user accounts, bank-specific study (the basket PDF is enough), bakeries-for-sale
+alerts, broker / miller leads, communes looking for a baker, franchise access, overseas départements.
 
 ## Data to add once an open source exists
 - **Market days** (jour de marché per commune): a strong signal for a baker (footfall, competition on market
