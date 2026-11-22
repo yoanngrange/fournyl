@@ -9,7 +9,7 @@ but is scattered and hard to read. Fournyl turns it into one map and one page pe
 **Primary user:** a baker (newly qualified or experienced) choosing a location, often willing to move.
 **Three bakery models:**
 1. **New opening** — wants many inhabitants per bakery, growing population, decent income.
-2. **Takeover** — same, plus bakeries whose owners are near retirement.
+2. **Takeover** — same; the shops' age and takeover history help (the RNE retirement signal was dropped, Nov 22, 2026).
 3. **Mobile / delivery** — one bakehouse serving several villages without a bakery.
 
 **No other users planned** (Yoann, Nov 22, 2026): no B2B or franchise access, no leads passed to brokers or
@@ -21,10 +21,10 @@ In: national map, commune map with filters and weights, delivery mode, commune p
 shareable URL state, local shortlist, all of metropolitan France + Corsica.
 
 Later: payment for the market study (one payment, invoice generated at payment, no account), van-tour route
-planning (keep in mind), public transport lines near each bakery (§3.7), the "likely to sell" signal (M6,
-deferred), market days, shop rents and foot traffic (no open source yet).
+planning (keep in mind), public transport lines near each bakery (§3.7), market days, shop rents and foot
+traffic (no open source yet).
 
-Dropped (Yoann, Nov 22, 2026): user accounts, bakeries-for-sale alerts, broker / miller contact, communes looking
+Dropped (Yoann, Nov 22, 2026): the "likely to sell" signal (RNE, M6) and score presets, user accounts, bakeries-for-sale alerts, broker / miller contact, communes looking
 for a baker, franchise access, overseas départements. The market study PDF stays as it is (§5, basket).
 
 ## 3. Screens
@@ -83,7 +83,7 @@ Criteria (MVP):
 | `growth` | Évolution de la population | %/year | higher | Medium (2) |
 | `bakery_age` | Ancienneté des boulangeries | mean years since the active 10.71C establishments were registered (Sirene); none without a bakery | higher (older shops: takeover or opening more likely) | Medium (2), Nov 2026 |
 | `crime` | Taux de délinquance | offences /1,000 | lower | Low (1), on by default |
-| `sell_soon` | Boulangeries à reprendre bientôt | count | higher | Low (1) — High in takeover preset |
+| ~~`sell_soon`~~ | ~~Boulangeries à reprendre bientôt~~ | dropped Nov 22, 2026 (RNE signal not built) | | |
 
 ### 3.3 Delivery mode (project switch "En boutique | En tournée")
 - User clicks a commune to place the **bakehouse** (marked with a dark pin).
@@ -106,12 +106,12 @@ Criteria (MVP):
 ### 3.4 Commune page (`design/Commune.dc.html`, route `/commune/{code_insee}`)
 *Original October brief below; the current layout is in §3.6 ("Commune page layout") and the basket PDF in §5.*
 Header: breadcrumb, shortlist, "Export market study (PDF)" (locked, Pro, later).
-Hero: name, INSEE code, département, region, distance to nearest big city (never built, §7 q. 4); score tile + label;
+Hero: name, INSEE code, département, region, distance to nearest big city (never built; dropped Nov 22, 2026); score tile + label;
 one-sentence summary generated from the data; 6 KPI tiles; locator map (commune + 2 rings of neighbours,
 neighbours shaded by "has a bakery").
 Sections: Why this score (national percentile per criterion + weight) · Who lives here (age pyramid,
 under-15 and 75+ shares) · Population over time (census series since 1968, hover per point) ·
-Competition (bakeries here, within 10 km, villages with none, likely to sell soon within 10 km, supermarkets,
+Competition (bakeries here, within 10 km, villages with none, likely to sell soon within 10 km (dropped), supermarkets,
 table of nearest communes) · Local economy (SIRENE establishments by sector, food shops, cafés, jobs) ·
 Income & housing (median vs département vs France, poverty rate, second homes, vacant housing, price €/m²) ·
 Safety & services (crime vs département vs France, schools, pharmacy, doctors, post office, station; market day "not in open data yet") ·
@@ -216,7 +216,7 @@ d'utilisation · Mentions légales · Confidentialité. Every "?" in the interfa
 In French, plain language.
 - **Sources:** for each dataset, name, producer, vintage, licence, link, what we use it for (from `meta.json`).
 - **Choices:** every scoring rule and why — national percentiles, weights, the no-bakery rule, the bakery count
-  source (BPE), the growth definition, the crime indicators, the "likely to sell" signal and its privacy rule.
+  source (BPE), the growth definition, the crime indicators.
 - **Potential biases and limits:** statistical secrecy on small communes (missing ≠ 0, criterion dropped),
   BPE vs SIRENE gaps, supermarket in-store bakeries not counted as bakeries, crime recorded where reported
   (tourist and commuter communes look worse), census lag (population is 3 years old), commune mergers,
@@ -229,7 +229,7 @@ Kept up to date with every milestone that adds or changes a criterion.
   communes** in the pipeline (`0..1`, ties = mid-rank). Invert for "lower is better" criteria.
 - Client computes `score = round(100 × Σ(wᵢ × pᵢ) / Σ(wᵢ))` over criteria with weight > 0 **and a value**.
 - Weights are fixed by us (see §3.2), not set by users; percentiles never change with the view.
-  Future presets (takeover, mobile) would be alternative recipes chosen by us, not free weights.
+  One recipe for everyone: no presets (dropped Nov 22, 2026).
 - **Inhabitants per bakery** (revised Oct 19, 2026): `per_bakery = population / bakeries`, the real figure the
   user expects; communes with no bakery have no value (shown "aucune boulangerie", ignored by that slider).
   *(An Oct 17 version used `population / (bakeries + 1)`, "yours included"; dropped because the displayed figure
@@ -239,8 +239,7 @@ Kept up to date with every milestone that adds or changes a criterion.
   linear in between (`NO_BAKERY_BOOST*` in `pipeline/config.py`; decided Oct 25, 2026 from the share of communes
   that do have a bakery by size: 17 % at 300–500 inhabitants, 68 % at 1,000–1,500).
 - Category: Go ≥ 60, Maybe 40–59, Avoid < 40.
-- No onboarding questions: the site opens straight on the map (decided Nov 22, 2026). Presets (New opening,
-  Takeover with sell_soon = High) wait for the takeover signal (M6, deferred).
+- No onboarding questions and no presets: the site opens straight on the map with one score (Nov 22, 2026).
 
 ## 5. Other MVP features
 - **Search:** commune name autocomplete (accent-insensitive, handles "Saint" / "St"), jumps map + opens card.
@@ -274,7 +273,6 @@ Kept up to date with every milestone that adds or changes a criterion.
 ## 7. Open questions (ask Yoann before building these)
 1. ~~Product name and domain~~ **Decided (Nov 2026):** Fournyl, fournyl.com.
 2. ~~Onboarding questions or straight to the map?~~ **Decided (Nov 22, 2026):** straight to the map.
-3. Takeover and new opening as presets of one score, or two separate scores? *Deferred with the takeover signal (M6).*
-4. Show "à 32 km de Limoges" (distance to the nearest city of 50,000+ inhabitants) in the commune page header?
-   From the October mockup; never built.
+3. ~~Takeover and new opening as presets or two scores?~~ **Dropped (Nov 22, 2026):** one score, no presets.
+4. ~~Distance to the nearest big city in the commune page header?~~ **Dropped (Nov 22, 2026).**
 5. ~~Is the crime criterion on by default?~~ **Decided:** yes, weight Low (1).
