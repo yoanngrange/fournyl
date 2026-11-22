@@ -170,6 +170,16 @@ BREAD_KINDS = {"10.71C": "bakery", "10.71D": "pastry", "10.71B": "bake_off", "47
 BREAD_RADIUS_M = 5_000
 BREAD_MAX_POINTS = 300  # nearest first: big cities would otherwise list thousands
 PAGE_KINDS = {"10.71C", "10.71D"}  # points of sale that have their own page (pipeline/build_bakeries.py)
+APRM = "activitePrincipaleRegistreMetiersEtablissement"  # activity in the trades register (chambres de métiers)
+# Some craft bakeries are filed by Insee as bread retail (47.24Z) or bake-off (10.71B) while the trades register,
+# kept by the chambres de métiers, says boulangerie (1071CA, 1071CB) or pâtisserie (1071DZ): the register wins.
+APRM_KINDS = {"1071CA": "10.71C", "1071CB": "10.71C", "1071DZ": "10.71D"}
+
+
+def effective_naf(naf: pd.Series, aprm: pd.Series) -> pd.Series:
+    """NAF code used for the kind of a point of sale: the trades register corrects 47.24Z / 10.71B."""
+    fix = aprm.map(APRM_KINDS)
+    return fix.where(naf.isin(["47.24Z", "10.71B"]) & fix.notna(), naf)
 
 
 def bakery_id(siret: str) -> str:
@@ -221,11 +231,13 @@ def bread_points(centres: pd.DataFrame) -> dict:
             "coordonneeLambertOrdonneeEtablissement",
             "dateCreationEtablissement",
             "codeCommuneEtablissement",
+            APRM,
         ],
         filters=(pc.field("etatAdministratifEtablissement") == "A")
         & pc.field("activitePrincipaleEtablissement").isin(list(BREAD_KINDS)),
     ).to_pandas()
-    t.columns = ["siren", "siret", "naf", "public", "sign", "usual_name", "x", "y", "created", "commune"]
+    t.columns = ["siren", "siret", "naf", "public", "sign", "usual_name", "x", "y", "created", "commune", "aprm"]
+    t["naf"] = effective_naf(t.naf, t.aprm)
     t["x"] = pd.to_numeric(t.x, errors="coerce")
     t["y"] = pd.to_numeric(t.y, errors="coerce")
     t = t[(t.public == "O") & t.x.notna() & t.y.notna()]

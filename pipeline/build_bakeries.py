@@ -16,7 +16,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from pipeline import cog, fetch, transit
-from pipeline.build_local import BREAD_KINDS, bakery_id, hygiene, legal_codes
+from pipeline.build_local import APRM, BREAD_KINDS, bakery_id, effective_naf, hygiene, legal_codes
 from pipeline.config import (
     BAKERY_NEAR_M, BAKERY_NEAR_MAX, BAKERY_PAGE_KINDS, FOOTFALL, FOOTFALL_M, HISTORY_NEAR_M, OSM_MATCH_M,
     TRANSIT_M, TRANSIT_MAX_LINES, TRANSIT_SKIP_DEPS,
@@ -237,13 +237,14 @@ def _history(pages: pd.DataFrame) -> dict[int, list[dict]]:
         "enseigne1Etablissement": "sign", "denominationUsuelleEtablissement": "usual_name",
         "coordonneeLambertAbscisseEtablissement": "x", "coordonneeLambertOrdonneeEtablissement": "y",
         "dateCreationEtablissement": "created", "dateDebut": "closed", "numeroVoieEtablissement": "num",
-        "libelleVoieEtablissement": "street", "codePostalEtablissement": "cp",
+        "libelleVoieEtablissement": "street", "codePostalEtablissement": "cp", APRM: "aprm",
     }
     f = pq.read_table(
         fetch.path("sirene"), columns=list(cols),
         filters=(pc.field("etatAdministratifEtablissement") == "F") & pc.field("activitePrincipaleEtablissement").isin(list(BREAD_KINDS)),
     ).to_pandas().rename(columns=cols)
     f = f[f.public == "O"].reset_index(drop=True)
+    f["naf"] = effective_naf(f.naf, f.aprm)
     f["x"] = pd.to_numeric(f.x, errors="coerce")
     f["y"] = pd.to_numeric(f.y, errors="coerce")
     ul = pq.read_table(
@@ -378,7 +379,7 @@ def bakeries(codes: set[str]) -> dict[str, list[dict]]:
         "dateCreationEtablissement": "created", "codeCommuneEtablissement": "commune", "etablissementSiege": "seat",
         "trancheEffectifsEtablissement": "staff", "anneeEffectifsEtablissement": "staff_year",
         "numeroVoieEtablissement": "num", "indiceRepetitionEtablissement": "rep", "typeVoieEtablissement": "street_type",
-        "libelleVoieEtablissement": "street", "codePostalEtablissement": "cp",
+        "libelleVoieEtablissement": "street", "codePostalEtablissement": "cp", APRM: "aprm",
     }
     t = pq.read_table(
         fetch.path("sirene"),
@@ -388,6 +389,7 @@ def bakeries(codes: set[str]) -> dict[str, list[dict]]:
     t["x"] = pd.to_numeric(t.x, errors="coerce")
     t["y"] = pd.to_numeric(t.y, errors="coerce")
     t = t[(t.public == "O") & t.x.notna() & t.y.notna()].reset_index(drop=True)
+    t["naf"] = effective_naf(t.naf, t.aprm)
     t["siret"] = t.siret.astype(str)
 
     ul = pq.read_table(
